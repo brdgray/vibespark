@@ -34,7 +34,7 @@ export default function Footer() {
               <li><Link href="/about" className="hover:text-orange-400 transition-colors">About</Link></li>
               <li><Link href="/privacy" className="hover:text-orange-400 transition-colors">Privacy Policy</Link></li>
               <li><Link href="/terms" className="hover:text-orange-400 transition-colors">Terms of Service</Link></li>
-              <li><Link href="mailto:hello@vibespark.co" className="hover:text-orange-400 transition-colors">Contact</Link></li>
+              <li><Link href="/contact" className="hover:text-orange-400 transition-colors">Contact</Link></li>
             </ul>
           </div>
         </div>

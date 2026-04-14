@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Rocket, Users, Flag, MessageSquare, Zap, CheckCircle2, Clock, ArrowRight } from 'lucide-react'
+import { Rocket, Users, Flag, MessageSquare, Zap, CheckCircle2, Clock, ArrowRight, Mail } from 'lucide-react'
 
 export const metadata = { title: 'Admin — Overview' }
 
@@ -21,6 +21,7 @@ export default async function AdminOverviewPage() {
     { count: openReportsCount },
     { count: flaggedCommentsCount },
     { count: activePromotionsCount },
+    { count: contactNewCount },
     { data: recentStartups },
   ] = await Promise.all([
     supabase.from('startups').select('*', { count: 'exact', head: true }).eq('verification_status', 'pending'),
@@ -29,6 +30,7 @@ export default async function AdminOverviewPage() {
     supabase.from('reports').select('*', { count: 'exact', head: true }).eq('status', 'open'),
     supabase.from('startup_comments').select('*', { count: 'exact', head: true }).eq('status', 'flagged'),
     supabase.from('promotions').select('*', { count: 'exact', head: true }).eq('is_active', true),
+    (supabase.from('contact_submissions') as any).select('*', { count: 'exact', head: true }).eq('status', 'new'),
     supabase.from('startups')
       .select('id, name, slug, verification_status, created_at, startup_categories(name)')
       .order('created_at', { ascending: false })
@@ -42,6 +44,7 @@ export default async function AdminOverviewPage() {
     { label: 'Open Reports',      value: openReportsCount ?? 0,       icon: Flag,         color: 'bg-red-50 text-red-600 border-red-200',          href: '/dashboard/admin/moderation' },
     { label: 'Flagged Comments',  value: flaggedCommentsCount ?? 0,   icon: MessageSquare,color: 'bg-purple-50 text-purple-600 border-purple-200', href: '/dashboard/admin/moderation' },
     { label: 'Active Promotions', value: activePromotionsCount ?? 0,  icon: Zap,          color: 'bg-orange-50 text-orange-600 border-orange-200', href: '/dashboard/admin/promotions' },
+    { label: 'Contact Inbox',     value: contactNewCount ?? 0,        icon: Mail,         color: 'bg-cyan-50 text-cyan-600 border-cyan-200',       href: '/dashboard/admin/contact' },
   ]
 
   return (

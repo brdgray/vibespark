@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
-  LayoutDashboard, Rocket, Users, Shield, Zap, ChevronRight,
+  LayoutDashboard, Rocket, Users, Shield, Zap, ChevronRight, Mail,
 } from 'lucide-react'
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
   { href: '/dashboard/admin/users',      label: 'Users',       icon: Users },
   { href: '/dashboard/admin/moderation', label: 'Moderation',  icon: Shield },
   { href: '/dashboard/admin/promotions', label: 'Promotions',  icon: Zap },
+  { href: '/dashboard/admin/contact',    label: 'Contact',     icon: Mail },
 ]
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

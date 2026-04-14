@@ -115,7 +115,7 @@ export default async function HomePage() {
               </div>
               <div className="flex items-center gap-1.5">
                 <TrendingUp className="h-4 w-4 text-orange-400" />
-                Real signal scores
+                Real Spark Scores
               </div>
               <div className="flex items-center gap-1.5">
                 <FlaskConical className="h-4 w-4 text-blue-400" />
