@@ -281,7 +281,7 @@ export default function ProfileEditClient({ userId, profile, demographics }: Pro
           </div>
           <button
             type="button"
-            onClick={() => setIsResearchParticipant(v => !v)}
+            onClick={() => setIsResearchParticipant((v: boolean) => !v)}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isResearchParticipant ? 'bg-blue-500' : 'bg-slate-300'}`}
           >
             <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isResearchParticipant ? 'translate-x-6' : 'translate-x-1'}`} />

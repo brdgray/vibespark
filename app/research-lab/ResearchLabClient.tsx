@@ -29,7 +29,7 @@ interface ResearchLabClientProps {
 export default function ResearchLabClient({
   requests,
   user,
-  isResearchParticipant: _isResearchParticipant,
+  isResearchParticipant,
   respondedIds,
   preselectedRequest,
   requestedStartupSlug,

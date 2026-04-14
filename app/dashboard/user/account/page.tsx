@@ -15,7 +15,7 @@ export default async function AccountPage() {
     .eq('user_id', user.id)
 
   const roles = (rolesData as any[])?.map((r: any) => r.role) ?? ['user']
-  const isOAuthUser = !user.email?.includes('@') || (user.app_metadata?.provider && user.app_metadata.provider !== 'email')
+  const isOAuthUser = !user.email?.includes('@') || !!(user.app_metadata?.provider && user.app_metadata.provider !== 'email')
 
   return (
     <AccountClient
