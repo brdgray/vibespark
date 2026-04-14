@@ -37,7 +37,7 @@ export default async function VotedPage() {
         <div className="bg-white rounded-2xl border p-12 text-center text-muted-foreground">
           <ArrowUp className="h-10 w-10 mx-auto mb-3 opacity-20" />
           <p className="font-medium">No votes yet</p>
-          <p className="text-sm mt-1">Support startups you believe in by clicking "Support this Startup" on their profile.</p>
+          <p className="text-sm mt-1">Support startups you believe in by clicking &ldquo;Support this Startup&rdquo; on their profile.</p>
           <LinkButton href="/directory" className="mt-4 inline-block" size="sm" variant="outline">
             Explore Directory
           </LinkButton>
