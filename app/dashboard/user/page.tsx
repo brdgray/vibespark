@@ -86,18 +86,18 @@ export default async function UserOverviewPage() {
           <span className="text-xl font-bold text-orange-500">{totalScore.toLocaleString()} pts</span>
         </div>
         <div className="space-y-2 text-sm text-muted-foreground">
-          <div className="flex justify-between">
-            <span>🔬 Research feedback given</span>
-            <span className="font-medium text-slate-700">{researchCount ?? 0} × 20 = <span className="text-blue-600">{(researchCount ?? 0) * 20} pts</span></span>
-          </div>
-          <div className="flex justify-between">
-            <span>🚀 Startups supported</span>
-            <span className="font-medium text-slate-700">{voteCount ?? 0} × 5 = <span className="text-orange-600">{(voteCount ?? 0) * 5} pts</span></span>
-          </div>
-          <div className="flex justify-between">
-            <span>⭐ Startups saved</span>
-            <span className="font-medium text-slate-700">{saveCount ?? 0} × 2 = <span className="text-amber-600">{(saveCount ?? 0) * 2} pts</span></span>
-          </div>
+          {[
+            { emoji: '🔬', label: 'Research feedback', count: researchCount ?? 0, pts: (researchCount ?? 0) * 20, mult: 20, color: 'text-blue-600' },
+            { emoji: '🚀', label: 'Startups supported', count: voteCount ?? 0, pts: (voteCount ?? 0) * 5, mult: 5, color: 'text-orange-600' },
+            { emoji: '⭐', label: 'Startups saved', count: saveCount ?? 0, pts: (saveCount ?? 0) * 2, mult: 2, color: 'text-amber-600' },
+          ].map(row => (
+            <div key={row.label} className="flex items-center justify-between gap-2">
+              <span className="truncate">{row.emoji} {row.label}</span>
+              <span className="font-medium text-slate-700 shrink-0 text-xs sm:text-sm">
+                {row.count} × {row.mult} = <span className={row.color}>{row.pts} pts</span>
+              </span>
+            </div>
+          ))}
         </div>
       </div>
 

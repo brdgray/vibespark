@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import UserSidebar from '@/components/user/UserSidebar'
+import UserMobileNav from '@/components/user/UserMobileNav'
 
 export default async function UserDashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -21,14 +22,29 @@ export default async function UserDashboardLayout({ children }: { children: Reac
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      {/* Mobile: compact profile strip + tab nav */}
+      <div className="lg:hidden">
+        <UserMobileNav
+          profile={profile}
+          roles={roles}
+          totalScore={totalScore}
+          badgeKeys={badgeKeys}
+        />
+      </div>
+
+      <div className="container mx-auto px-4 py-4 lg:py-8 max-w-6xl">
         <div className="flex gap-6 items-start">
-          <UserSidebar
-            profile={profile}
-            roles={roles}
-            totalScore={totalScore}
-            badgeKeys={badgeKeys}
-          />
+          {/* Desktop sidebar */}
+          <div className="hidden lg:block">
+            <UserSidebar
+              profile={profile}
+              roles={roles}
+              totalScore={totalScore}
+              badgeKeys={badgeKeys}
+            />
+          </div>
+
+          {/* Main content */}
           <div className="flex-1 min-w-0">
             {children}
           </div>

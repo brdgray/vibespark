@@ -49,15 +49,19 @@ export default async function VotedPage() {
             if (!startup) return null
             return (
               <Link key={startup.slug + v.created_at} href={`/startups/${startup.slug}`}>
-                <div className="bg-white rounded-2xl border p-4 hover:shadow-sm transition-shadow flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
-                    <ArrowUp className="h-5 w-5 text-orange-500" />
+                <div className="bg-white rounded-2xl border p-4 hover:shadow-sm transition-shadow flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                    <ArrowUp className="h-4 w-4 text-orange-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-slate-900">{startup.name}</div>
-                    <p className="text-sm text-muted-foreground truncate">{startup.tagline}</p>
+                    <div className="font-semibold text-slate-900 truncate">{startup.name}</div>
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">{startup.tagline}</p>
+                    <div className="flex items-center gap-2 mt-1 sm:hidden">
+                      {startup.startup_stages?.name && <StageBadge stage={startup.startup_stages.name} />}
+                      <span className="text-xs text-muted-foreground">{new Date(v.created_at).toLocaleDateString()}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="hidden sm:flex items-center gap-2 shrink-0">
                     {startup.startup_stages?.name && <StageBadge stage={startup.startup_stages.name} />}
                     <span className="text-xs text-muted-foreground">
                       {new Date(v.created_at).toLocaleDateString()}

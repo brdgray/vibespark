@@ -50,25 +50,29 @@ export default async function SavedPage() {
             const startup = s.startups
             if (!startup) return null
             return (
-              <Link key={startup.slug} href={`/startups/${startup.slug}`}>
-                <div className="bg-white rounded-2xl border p-4 hover:shadow-sm transition-shadow flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                <Link key={startup.slug} href={`/startups/${startup.slug}`}>
+                <div className="bg-white rounded-2xl border p-4 hover:shadow-sm transition-shadow flex items-center gap-3">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
                     {startup.logo_path ? (
                       <Image src={startup.logo_path} alt={startup.name} width={48} height={48} className="object-contain" />
                     ) : (
-                      <span className="text-lg font-bold text-slate-400">{startup.name[0]}</span>
+                      <span className="text-base font-bold text-slate-400">{startup.name[0]}</span>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-slate-900">{startup.name}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-slate-900 truncate">{startup.name}</span>
                       {startup.verification_status === 'verified' && (
-                        <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                        <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">{startup.tagline}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">{startup.tagline}</p>
+                    <div className="flex items-center gap-2 mt-1 sm:hidden">
+                      {startup.startup_stages?.name && <StageBadge stage={startup.startup_stages.name} />}
+                      <span className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleDateString()}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="hidden sm:flex items-center gap-2 shrink-0">
                     {startup.startup_stages?.name && <StageBadge stage={startup.startup_stages.name} />}
                     <span className="text-xs text-muted-foreground">
                       {new Date(s.created_at).toLocaleDateString()}
