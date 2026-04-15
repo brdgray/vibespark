@@ -45,7 +45,7 @@ export default async function ResearchPage() {
             {responses?.length ?? 0} feedback responses on other startups
             {(responses?.length ?? 0) < 3 && (
               <span className="ml-2 text-amber-600 font-medium">
-                — {3 - (responses?.length ?? 0)} more to unlock full Research Lab insights on other startups (your own listing is separate)
+                — {3 - (responses?.length ?? 0)} more to unlock reading others&apos; lab stats and incoming feedback on your own startups
               </span>
             )}
           </p>
@@ -59,7 +59,7 @@ export default async function ResearchPage() {
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
           <p className="text-sm font-semibold text-amber-800 mb-2">Unlock Research Lab insights</p>
           <p className="text-xs text-amber-600 mb-3">
-            After 3 structured feedbacks on other startups (not your own), you can see response totals and fuller activity for other founders in the Lab. Adding your startup to Research Lab is controlled from your startup dashboard and does not depend on this.
+            After 3 structured feedbacks on other startups (not your own), you can see response totals in the Lab and read full incoming Research Lab feedback on your own products. Listing your startup in the Lab is controlled separately on your startup dashboard.
           </p>
           <div className="flex gap-2">
             {[0, 1, 2].map(i => (

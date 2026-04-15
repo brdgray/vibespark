@@ -13,6 +13,12 @@ import StartupActions from '@/components/startup/StartupActions'
 import CommentsSection from '@/components/startup/CommentsSection'
 import SparkScoreChart from '@/components/startup/SparkScoreChart'
 import ScreenshotGallery from '@/components/startup/ScreenshotGallery'
+import {
+  fetchFeedbackToOthersCount,
+  founderResearchGivebackMet,
+  RESEARCH_GIVEBACK_REQUIRED,
+} from '@/lib/utils/research-giveback'
+import { LinkButton } from '@/components/ui/link-button'
 
 interface Props {
   params: { slug: string }
@@ -66,6 +72,11 @@ export default async function StartupProfilePage({ params }: Props) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  const isOwnerProfile = !!(user && startup.created_by === user.id)
+  const feedbackToOthersCount = user ? await fetchFeedbackToOthersCount(supabase, user.id) : 0
+  const ownerGivebackMet = founderResearchGivebackMet(feedbackToOthersCount)
+  const hideOwnIncomingResearch = isOwnerProfile && !ownerGivebackMet
+
   let hasVoted = false
   let hasSaved = false
 
@@ -78,12 +89,15 @@ export default async function StartupProfilePage({ params }: Props) {
     hasSaved = !!save
   }
 
-  // Research insights
-  const { data: demoSummary } = await supabase
-    .from('startup_demographic_summary')
-    .select('*')
-    .eq('startup_id', startup.id)
-    .limit(10)
+  // Research insights (owners without give-back see nothing here)
+  const { data: demoSummaryRaw } = hideOwnIncomingResearch
+    ? { data: [] as any[] }
+    : await supabase
+        .from('startup_demographic_summary')
+        .select('*')
+        .eq('startup_id', startup.id)
+        .limit(10)
+  const demoSummary = demoSummaryRaw ?? []
 
   // Spark score history (last 30 days)
   const { data: scoreHistory } = await supabase
@@ -100,10 +114,20 @@ export default async function StartupProfilePage({ params }: Props) {
     .eq('startup_id', startup.id)
     .order('display_order', { ascending: true })
 
-  const metrics = startup.startup_spark_score_metrics?.[0] ?? {
+  const rawMetrics = startup.startup_spark_score_metrics?.[0] ?? {
     spark_score: 0, would_use_pct: 0, would_use_yes: 0, would_use_maybe: 0, would_use_no: 0,
     total_comments: 0, total_research_responses: 0, support_count: 0, save_count: 0, avg_rating: null,
   }
+  const metrics = hideOwnIncomingResearch
+    ? {
+        ...rawMetrics,
+        total_research_responses: 0,
+        would_use_pct: 0,
+        would_use_yes: 0,
+        would_use_maybe: 0,
+        would_use_no: 0,
+      }
+    : rawMetrics
 
   const publishedComments = startup.startup_comments?.filter(
     (c: any) => !c.parent_comment_id && c.status === 'published'
@@ -297,6 +321,17 @@ export default async function StartupProfilePage({ params }: Props) {
 
             {/* Spark Score */}
             <div className="bg-white rounded-2xl border p-5 space-y-4">
+              {hideOwnIncomingResearch && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                  <p className="font-semibold">Research feedback is locked</p>
+                  <p className="mt-1 text-amber-800">
+                    Give {RESEARCH_GIVEBACK_REQUIRED - feedbackToOthersCount} more structured feedback on other startups to see Research Lab results for your own product on this page.
+                  </p>
+                  <LinkButton href="/research-lab" size="sm" variant="outline" className="mt-2 border-amber-300 text-amber-900">
+                    Research Lab
+                  </LinkButton>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-slate-900">Spark Score</h3>
                 <SparkScore score={Math.round(metrics.spark_score ?? 0)} size="lg" />
@@ -305,16 +340,18 @@ export default async function StartupProfilePage({ params }: Props) {
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Would Use</span>
-                  <span className="font-medium text-green-600">{Math.round(metrics.would_use_pct ?? 0)}%</span>
+                  <span className={`font-medium ${hideOwnIncomingResearch ? 'text-amber-700' : 'text-green-600'}`}>
+                    {hideOwnIncomingResearch ? '—' : `${Math.round(rawMetrics.would_use_pct ?? 0)}%`}
+                  </span>
                 </div>
-                {(metrics.would_use_yes + metrics.would_use_maybe + metrics.would_use_no) > 0 && (
+                {!hideOwnIncomingResearch && (rawMetrics.would_use_yes + rawMetrics.would_use_maybe + rawMetrics.would_use_no) > 0 && (
                   <div className="space-y-1.5">
                     {[
-                      { label: 'Yes', count: metrics.would_use_yes, color: 'bg-green-500' },
-                      { label: 'Maybe', count: metrics.would_use_maybe, color: 'bg-amber-400' },
-                      { label: 'No', count: metrics.would_use_no, color: 'bg-slate-300' },
+                      { label: 'Yes', count: rawMetrics.would_use_yes, color: 'bg-green-500' },
+                      { label: 'Maybe', count: rawMetrics.would_use_maybe, color: 'bg-amber-400' },
+                      { label: 'No', count: rawMetrics.would_use_no, color: 'bg-slate-300' },
                     ].map(item => {
-                      const total = metrics.would_use_yes + metrics.would_use_maybe + metrics.would_use_no
+                      const total = rawMetrics.would_use_yes + rawMetrics.would_use_maybe + rawMetrics.would_use_no
                       const pct = total > 0 ? Math.round((item.count / total) * 100) : 0
                       return (
                         <div key={item.label} className="flex items-center gap-2 text-xs">
@@ -333,7 +370,10 @@ export default async function StartupProfilePage({ params }: Props) {
                     { label: 'Supporters', value: metrics.support_count },
                     { label: 'Saved', value: metrics.save_count },
                     { label: 'Comments', value: metrics.total_comments },
-                    { label: 'Research', value: metrics.total_research_responses },
+                    {
+                      label: 'Research',
+                      value: hideOwnIncomingResearch ? '—' : (rawMetrics.total_research_responses ?? 0),
+                    },
                   ].map(stat => (
                     <div key={stat.label} className="text-center bg-slate-50 rounded-xl p-2">
                       <div className="font-bold text-slate-800">{stat.value ?? 0}</div>

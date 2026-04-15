@@ -615,7 +615,7 @@ export default function SubmitStartupForm({ userId, categories, stages }: Submit
                       This is ON by default so you can receive structured community feedback later. Turn it OFF if you do not want Research Lab for this startup.
                     </p>
                     <p className="text-xs mt-1 text-blue-700">
-                      You can turn Research Lab on anytime. To see response totals and fuller activity on other products in the Lab, give structured feedback on 3 other startups first.
+                      You can turn Research Lab on anytime. To read incoming feedback on your own startup from the Lab and unlock full research stats, give structured feedback on 3 other startups first.
                     </p>
                   </div>
                 </div>

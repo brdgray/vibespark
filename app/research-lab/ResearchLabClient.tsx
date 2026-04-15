@@ -153,10 +153,10 @@ export default function ResearchLabClient({
           <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="font-semibold text-amber-900">Unlock Research Lab insights for other startups</p>
+                <p className="font-semibold text-amber-900">Unlock Research Lab insights</p>
                 <p className="mt-1 text-sm text-amber-800">
-                  Your own startup can still appear in the Lab from your dashboard. To see response totals and activity on other founders&apos; products here, give structured feedback on{' '}
-                  {remainingToUnlock === 1 ? 'one more startup' : `${remainingToUnlock} more startups`} (not your own).
+                  Your own startup can still appear in the Lab from your dashboard. After you give structured feedback on{' '}
+                  {remainingToUnlock === 1 ? 'one more startup' : `${remainingToUnlock} more startups`} you don&apos;t own, you can see response totals here and read incoming feedback on your own listings (database + dashboard).
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-1.5 self-start rounded-full border border-amber-200 bg-white px-3 py-1.5 text-sm font-semibold text-amber-900">
