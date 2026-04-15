@@ -15,6 +15,13 @@ export const metadata: Metadata = {
     template: '%s | VibeSpark',
   },
   description: 'Discover verified AI-built startups gaining real traction. Vote, research, and connect with the community.',
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [{ url: '/apple-icon.svg', type: 'image/svg+xml' }],
+    shortcut: ['/icon.svg'],
+  },
   openGraph: {
     siteName: 'VibeSpark',
     type: 'website',
