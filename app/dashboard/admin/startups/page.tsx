@@ -53,6 +53,14 @@ export default async function AdminStartupsPage({
         <p className="text-muted-foreground mt-0.5">Manage all submitted startups and verification queue</p>
       </div>
 
+      <div className="mb-6 rounded-2xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
+        <p className="font-medium text-blue-950">New listings go live immediately</p>
+        <p className="mt-1 text-xs text-blue-800 leading-relaxed">
+          Founders no longer wait for approval to appear in the directory. Use the lists below for optional moderation,
+          inactive/suspended states, and any legacy &quot;pending verification&quot; rows.
+        </p>
+      </div>
+
       {/* Filter tabs */}
       <div className="flex gap-2 mb-6">
         {filterTabs.map(t => (
@@ -71,13 +79,21 @@ export default async function AdminStartupsPage({
       </div>
 
       {/* Pending verification queue */}
-      {(filter === 'all' || filter === 'pending') && pending.length > 0 && (
+      {(filter === 'all' || filter === 'pending') && (
         <div className="mb-8">
           <h2 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            Pending Verification
-            <span className="bg-amber-100 text-amber-700 text-xs font-medium px-2 py-0.5 rounded-full">{pending.length}</span>
+            Pending verification
+            {pending.length > 0 && (
+              <span className="bg-amber-100 text-amber-700 text-xs font-medium px-2 py-0.5 rounded-full">{pending.length}</span>
+            )}
           </h2>
-          <VerificationQueue startups={pending} />
+          {pending.length > 0 ? (
+            <VerificationQueue startups={pending} />
+          ) : (
+            <p className="text-sm text-muted-foreground rounded-2xl border border-dashed bg-slate-50/80 px-4 py-6 text-center">
+              No startups awaiting verification. New submissions are published as verified by default.
+            </p>
+          )}
         </div>
       )}
 

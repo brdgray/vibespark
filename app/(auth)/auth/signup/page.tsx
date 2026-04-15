@@ -8,12 +8,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useRouter } from 'next/navigation'
-import { demographicsSchema } from '@/lib/validations/auth'
-import DemographicsFormFields from '@/components/user/DemographicsFormFields'
-import {
-  hasPartialResearchDemographicsInput,
-  isResearchDemographicsComplete,
-} from '@/lib/utils/research-demographics-form'
 
 function GoogleIcon() {
   return (
@@ -37,19 +31,6 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const [ageRange, setAgeRange] = useState('')
-  const [country, setCountry] = useState('')
-  const [profession, setProfession] = useState('')
-  const [industry, setIndustry] = useState('')
-  const [selectedPersonas, setSelectedPersonas] = useState<string[]>([])
-  const [technicalLevel, setTechnicalLevel] = useState('')
-
-  function togglePersona(key: string) {
-    setSelectedPersonas(prev =>
-      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key],
-    )
-  }
 
   async function handleGoogleSignUp() {
     setGoogleLoading(true)
@@ -82,48 +63,6 @@ export default function SignUpPage() {
       return
     }
 
-    const demoState = {
-      ageRange,
-      country,
-      profession,
-      industry,
-      personaKeys: selectedPersonas,
-      technicalLevel,
-    }
-    const partial = hasPartialResearchDemographicsInput(demoState)
-    const complete = isResearchDemographicsComplete(demoState)
-
-    let demographicsPayload: Record<string, string> | undefined
-    if (partial && !complete) {
-      setError(
-        'Research Lab profile is optional. Clear any fields you started, or finish all of: age range, country (2+ characters), profession, industry, and at least one “I am a…” option.',
-      )
-      return
-    }
-    if (complete) {
-      const parsed = demographicsSchema.safeParse({
-        ageRange,
-        country: country.trim(),
-        profession,
-        industry,
-        personaType: selectedPersonas.join(','),
-        technicalLevel: technicalLevel || undefined,
-      })
-      if (!parsed.success) {
-        setError(parsed.error.issues[0]?.message ?? 'Check the research fields below.')
-        return
-      }
-      const d = parsed.data
-      demographicsPayload = {
-        ageRange: d.ageRange,
-        country: d.country,
-        profession: d.profession,
-        industry: d.industry,
-        personaType: selectedPersonas.join(','),
-        technicalLevel: d.technicalLevel ?? '',
-      }
-    }
-
     setIsLoading(true)
     setError(null)
 
@@ -135,7 +74,6 @@ export default function SignUpPage() {
         password,
         displayName: displayName.trim(),
         username: username.trim(),
-        demographics: demographicsPayload,
       }),
     })
     const json = await res.json()
@@ -169,7 +107,7 @@ export default function SignUpPage() {
 
         <div className="text-center">
           <h1 className="text-2xl font-bold text-slate-900">Create your account</h1>
-          <p className="text-sm text-slate-500 mt-1">Join the verified AI startup community</p>
+          <p className="text-sm text-slate-500 mt-1">Join the AI startup community — add Research Lab details later from your profile if you want.</p>
         </div>
 
         {error && (
@@ -244,30 +182,6 @@ export default function SignUpPage() {
               placeholder="Min 8 characters"
               value={password}
               onChange={e => setPassword(e.target.value)}
-            />
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
-            <div>
-              <h2 className="text-sm font-semibold text-slate-900">Research Lab profile</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Same options as Edit Profile → Research Demographics. Leave the whole section blank to skip, or fill every field if you want it saved now.
-              </p>
-            </div>
-            <DemographicsFormFields
-              variant="signup"
-              ageRange={ageRange}
-              setAgeRange={setAgeRange}
-              country={country}
-              setCountry={setCountry}
-              profession={profession}
-              setProfession={setProfession}
-              industry={industry}
-              setIndustry={setIndustry}
-              selectedPersonas={selectedPersonas}
-              togglePersona={togglePersona}
-              technicalLevel={technicalLevel}
-              setTechnicalLevel={setTechnicalLevel}
             />
           </div>
 

@@ -4,7 +4,7 @@ import SubmitStartupForm from './SubmitStartupForm'
 
 export const metadata = {
   title: 'Submit Your Startup',
-  description: 'Submit your AI-built startup to the VibeSpark directory.',
+  description: 'List your AI-built startup on VibeSpark — one short form, live in the directory right away.',
 }
 
 export default async function SubmitPage() {
@@ -18,11 +18,12 @@ export default async function SubmitPage() {
   ])
 
   return (
-    <div className="container mx-auto px-4 py-10 max-w-2xl">
+    <div className="container mx-auto px-4 py-10 max-w-3xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900">Submit Your Startup</h1>
         <p className="text-muted-foreground mt-1.5">
-          Add your AI-built startup to the VibeSpark directory. It will be reviewed before going live.
+          One short form — your startup appears in the directory as soon as you publish. Staff can still review new
+          listings from the admin dashboard.
         </p>
       </div>
       <SubmitStartupForm
