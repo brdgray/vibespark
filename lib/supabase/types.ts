@@ -152,6 +152,18 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['startup_ratings']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['startup_ratings']['Insert']>
       }
+      startup_profile_would_use: {
+        Row: {
+          id: string
+          startup_id: string
+          user_id: string
+          would_use: WouldUse
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['startup_profile_would_use']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['startup_profile_would_use']['Insert']>
+      }
       research_requests: {
         Row: {
           id: string
@@ -249,7 +261,7 @@ export interface Database {
           would_use_pct: number
           activity_7d: number
           trending_score: number
-          signal_score: number
+          spark_score: number
         }
       }
       startup_demographic_summary: {

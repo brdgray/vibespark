@@ -19,6 +19,7 @@ import {
   RESEARCH_GIVEBACK_REQUIRED,
 } from '@/lib/utils/research-giveback'
 import { LinkButton } from '@/components/ui/link-button'
+import type { WouldUse } from '@/lib/supabase/types'
 
 interface Props {
   params: { slug: string }
@@ -94,6 +95,8 @@ export default async function StartupProfilePage({ params }: Props) {
 
   let hasVoted = false
   let hasSaved = false
+  let profileWouldUse: WouldUse | null = null
+  let labWouldUseForMetrics: WouldUse | null = null
 
   if (user) {
     const [{ data: vote }, { data: save }] = await Promise.all([
@@ -102,6 +105,16 @@ export default async function StartupProfilePage({ params }: Props) {
     ])
     hasVoted = !!vote
     hasSaved = !!save
+  }
+
+  if (user && !isOwnerProfile) {
+    const [{ data: prof }, { data: labRows }] = await Promise.all([
+      supabase.from('startup_profile_would_use').select('would_use').eq('startup_id', startup.id).eq('user_id', user.id).maybeSingle(),
+      supabase.from('research_responses').select('would_use').eq('startup_id', startup.id).eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
+    ])
+    profileWouldUse = ((prof as { would_use: WouldUse } | null)?.would_use) ?? null
+    const firstLab = labRows?.[0] as { would_use: WouldUse } | undefined
+    labWouldUseForMetrics = firstLab?.would_use ?? null
   }
 
   // Research insights (owners without give-back see nothing here)
@@ -332,6 +345,9 @@ export default async function StartupProfilePage({ params }: Props) {
               user={user}
               hasVoted={hasVoted}
               hasSaved={hasSaved}
+              profileWouldUse={profileWouldUse}
+              labWouldUseForMetrics={labWouldUseForMetrics}
+              isOwnerProfile={isOwnerProfile}
             />
 
             {/* Spark Score */}
