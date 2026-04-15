@@ -11,11 +11,17 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import {
-  FlaskConical, CheckCircle2, Lock, ChevronRight, Star,
-  ExternalLink, Globe
+  FlaskConical, CheckCircle2, Lock, ChevronRight,
+  ExternalLink, Globe,
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import ResearchScoreSliders from '@/components/research/ResearchScoreSliders'
+import {
+  DEFAULT_RESEARCH_CRITERIA_SCORES,
+  type ResearchCriteriaScores,
+  valueClarityToLegacyClarity,
+} from '@/lib/constants/research-criteria'
 
 const FEEDBACK_TO_UNLOCK_INSIGHTS = 3
 
@@ -49,7 +55,7 @@ export default function ResearchLabClient({
 
   // Form state
   const [wouldUse, setWouldUse] = useState<'yes' | 'maybe' | 'no' | ''>('')
-  const [clarityScore, setClarityScore] = useState(3)
+  const [criteriaScores, setCriteriaScores] = useState<ResearchCriteriaScores>({ ...DEFAULT_RESEARCH_CRITERIA_SCORES })
   const [missingFeatures, setMissingFeatures] = useState('')
   const [frictionPoints, setFrictionPoints] = useState('')
   const [targetUserGuess, setTargetUserGuess] = useState('')
@@ -68,7 +74,7 @@ export default function ResearchLabClient({
 
   function resetForm() {
     setWouldUse('')
-    setClarityScore(3)
+    setCriteriaScores({ ...DEFAULT_RESEARCH_CRITERIA_SCORES })
     setMissingFeatures('')
     setFrictionPoints('')
     setTargetUserGuess('')
@@ -94,12 +100,18 @@ export default function ResearchLabClient({
     }
 
     setIsSubmitting(true)
+    const clarityLegacy = valueClarityToLegacyClarity(criteriaScores.valueClarity)
     const { error } = await (supabase.from('research_responses') as any).insert({
       research_request_id: activeRequest.id,
       startup_id: activeRequest.startup_id,
       user_id: user.id,
       would_use: wouldUse,
-      clarity_score: clarityScore,
+      clarity_score: clarityLegacy,
+      usability_score: criteriaScores.usability,
+      scalability_score: criteriaScores.scalability,
+      value_clarity_score: criteriaScores.valueClarity,
+      desirability_score: criteriaScores.desirability,
+      trust_score: criteriaScores.trust,
       missing_features: missingFeatures || null,
       friction_points: frictionPoints || null,
       target_user_guess: targetUserGuess || null,
@@ -120,7 +132,7 @@ export default function ResearchLabClient({
   const done = requests.filter(r => submitted.includes(r.id))
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen overflow-x-hidden bg-slate-50">
       {/* Header */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-10">
@@ -148,7 +160,7 @@ export default function ResearchLabClient({
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto max-w-full overflow-x-hidden px-4 py-8 sm:max-w-4xl">
         {user && !showOthersInsights && (
           <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -167,7 +179,7 @@ export default function ResearchLabClient({
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
           {[
             { label: 'Awaiting Feedback', value: pending.length, color: 'text-blue-600' },
             { label: 'Completed', value: done.length, color: 'text-green-600' },
@@ -208,8 +220,8 @@ export default function ResearchLabClient({
             <div className="space-y-3">
               {pending.map(request => (
                 <Card key={request.id} className="hover:shadow-sm transition-shadow">
-                  <CardContent className="p-5">
-                    <div className="flex items-start gap-4">
+                  <CardContent className="p-4 sm:p-5">
+                    <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start">
                       <div className="w-12 h-12 rounded-2xl border bg-white flex items-center justify-center flex-shrink-0">
                         {request.startups?.logo_path ? (
                           <Image src={request.startups.logo_path} alt="" width={48} height={48} className="object-contain" />
@@ -266,7 +278,7 @@ export default function ResearchLabClient({
                       <Button
                         onClick={() => openFeedback(request)}
                         size="sm"
-                        className={`flex-shrink-0 ${!isResearchParticipant ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'}`}
+                        className={`w-full shrink-0 sm:w-auto ${!isResearchParticipant ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'}`}
                       >
                         {!user ? (
                           <><Lock className="mr-1.5 h-3.5 w-3.5" /> Sign in</>
@@ -327,39 +339,45 @@ export default function ResearchLabClient({
 
       {/* Feedback Modal */}
       <Dialog open={!!activeRequest} onOpenChange={(open) => { if (!open) setActiveRequest(null) }}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FlaskConical className="h-5 w-5 text-blue-500" />
-              Give Feedback: {activeRequest?.startups?.name}
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent
+          showCloseButton
+          className="!flex min-h-0 h-[min(92dvh,760px)] w-[min(100vw-1rem,28rem)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:h-[min(90dvh,720px)] sm:w-[min(100vw-2rem,40rem)]"
+        >
+          <div className="shrink-0 border-b bg-popover px-4 pb-3 pt-4 sm:px-5">
+            <DialogHeader className="gap-1 space-y-0 text-left">
+              <DialogTitle className="flex items-start gap-2 pr-8 text-left text-base leading-snug sm:text-lg">
+                <FlaskConical className="mt-0.5 h-5 w-5 shrink-0 text-blue-500" />
+                <span className="min-w-0 break-words">Give feedback: {activeRequest?.startups?.name}</span>
+              </DialogTitle>
+            </DialogHeader>
+          </div>
 
           {activeRequest && (
             <>
+              <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 sm:px-5">
               {/* Startup context card */}
-              <div className="rounded-2xl bg-slate-50 border p-4 space-y-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl border bg-white flex items-center justify-center flex-shrink-0">
+              <div className="space-y-2 rounded-2xl border bg-slate-50 p-3 sm:p-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-white">
                     {activeRequest.startups?.logo_path ? (
                       <Image src={activeRequest.startups.logo_path} alt="" width={40} height={40} className="object-contain" />
                     ) : (
                       <span className="text-base font-bold text-slate-300">{activeRequest.startups?.name?.[0]}</span>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-slate-900 text-sm">{activeRequest.startups?.name}</div>
-                    <div className="text-xs text-muted-foreground truncate">{activeRequest.startups?.tagline}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold text-slate-900">{activeRequest.startups?.name}</div>
+                    <div className="line-clamp-2 text-xs text-muted-foreground">{activeRequest.startups?.tagline}</div>
                   </div>
                   {activeRequest.startups?.website_url && (
                     <a
                       href={activeRequest.startups.website_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-blue-500 hover:underline flex items-center gap-1 flex-shrink-0"
+                      className="flex shrink-0 items-center gap-1 text-xs text-blue-500 hover:underline"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
-                      Try it
+                      <span className="hidden sm:inline">Try it</span>
                     </a>
                   )}
                 </div>
@@ -376,13 +394,13 @@ export default function ResearchLabClient({
                 )}
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form id="research-feedback-form" onSubmit={handleSubmit} className="space-y-6 pt-2">
                 {/* Q1: Would you use this? */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-800 mb-2">
+                <div className="min-w-0">
+                  <label className="mb-2 block text-sm font-semibold text-slate-800">
                     Would you use this product? <span className="text-destructive">*</span>
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     {([
                       { value: 'yes', emoji: '👍', label: 'Yes, definitely' },
                       { value: 'maybe', emoji: '🤔', label: 'Maybe' },
@@ -392,47 +410,21 @@ export default function ResearchLabClient({
                         key={opt.value}
                         type="button"
                         onClick={() => { setWouldUse(opt.value); setFormErrors(e => ({ ...e, wouldUse: '' })) }}
-                        className={`flex flex-col items-center gap-1.5 rounded-2xl border-2 p-3 transition-all ${
+                        className={`flex min-h-[4.5rem] flex-col items-center justify-center gap-1 rounded-2xl border-2 p-2.5 transition-all sm:p-3 ${
                           wouldUse === opt.value
                             ? 'border-orange-500 bg-orange-50'
                             : 'border-border hover:border-orange-200'
                         }`}
                       >
-                        <span className="text-2xl">{opt.emoji}</span>
-                        <span className="text-xs font-medium text-center leading-tight">{opt.label}</span>
+                        <span className="text-xl sm:text-2xl">{opt.emoji}</span>
+                        <span className="text-center text-[11px] font-medium leading-tight sm:text-xs">{opt.label}</span>
                       </button>
                     ))}
                   </div>
                   {formErrors.wouldUse && <p className="text-xs text-destructive mt-1">{formErrors.wouldUse}</p>}
                 </div>
 
-                {/* Q2: Clarity score */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-800 mb-2">
-                    How clear is the value proposition?
-                    <span className="ml-1.5 text-amber-500 font-bold">{clarityScore}/5</span>
-                  </label>
-                  <div className="flex gap-1.5">
-                    {[1, 2, 3, 4, 5].map(n => (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => setClarityScore(n)}
-                        className={`flex-1 py-2 rounded-xl border transition-all ${
-                          clarityScore >= n
-                            ? 'bg-amber-400 border-amber-400 text-white'
-                            : 'border-border text-slate-400 hover:border-amber-300'
-                        }`}
-                      >
-                        <Star className={`h-4 w-4 mx-auto ${clarityScore >= n ? 'fill-white' : ''}`} />
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground mt-1 px-0.5">
-                    <span>Confusing</span>
-                    <span>Crystal clear</span>
-                  </div>
-                </div>
+                <ResearchScoreSliders scores={criteriaScores} onChange={setCriteriaScores} disabled={isSubmitting} />
 
                 {/* Q3: What's missing? */}
                 <div>
@@ -473,19 +465,24 @@ export default function ResearchLabClient({
                   />
                 </div>
 
-                <div className="flex gap-2 pt-1">
-                  <Button type="button" variant="outline" className="flex-1" onClick={() => setActiveRequest(null)}>
+              </form>
+              </div>
+
+              <div className="shrink-0 border-t bg-slate-50/95 px-4 py-3 sm:px-5">
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                  <Button type="button" variant="outline" className="w-full sm:w-auto sm:min-w-[7rem]" onClick={() => setActiveRequest(null)}>
                     Cancel
                   </Button>
                   <Button
                     type="submit"
-                    className="flex-1 bg-blue-500 hover:bg-blue-600"
+                    form="research-feedback-form"
+                    className="w-full bg-blue-500 hover:bg-blue-600 sm:w-auto sm:min-w-[10rem]"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
+                    {isSubmitting ? 'Submitting…' : 'Submit feedback'}
                   </Button>
                 </div>
-              </form>
+              </div>
             </>
           )}
         </DialogContent>

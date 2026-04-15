@@ -174,6 +174,11 @@ export interface Database {
           user_id: string
           would_use: WouldUse
           clarity_score: number
+          usability_score: number
+          scalability_score: number
+          value_clarity_score: number
+          desirability_score: number
+          trust_score: number
           problem_understanding: string | null
           missing_features: string | null
           friction_points: string | null
@@ -257,6 +262,18 @@ export interface Database {
           maybe_count: number
           no_count: number
           total: number
+        }
+      }
+      startup_research_criteria_aggregates: {
+        Row: {
+          startup_id: string
+          response_count: number
+          avg_usability: number | null
+          avg_scalability: number | null
+          avg_value_clarity: number | null
+          avg_desirability: number | null
+          avg_trust: number | null
+          avg_clarity_legacy: number | null
         }
       }
     }

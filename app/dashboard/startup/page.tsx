@@ -14,6 +14,8 @@ import {
   founderResearchGivebackMet,
   RESEARCH_GIVEBACK_REQUIRED,
 } from '@/lib/utils/research-giveback'
+import { fetchResearchCriteriaMap } from '@/lib/utils/research-aggregates'
+import { CRITERIA_AGGREGATE_FIELD, RESEARCH_CRITERIA_DEFS } from '@/lib/constants/research-criteria'
 
 export const metadata = { title: 'Startup Dashboard' }
 
@@ -36,7 +38,10 @@ export default async function StartupDashboardPage() {
     .order('created_at', { ascending: false })
 
   const ids = (rawStartups ?? []).map((s: any) => s.id)
-  const metricsMap = await fetchMetricsMap(supabase, ids)
+  const [metricsMap, criteriaMap] = await Promise.all([
+    fetchMetricsMap(supabase, ids),
+    fetchResearchCriteriaMap(supabase, ids),
+  ])
   const startups = (rawStartups ?? []).map((s: any) => ({
     ...s,
     startup_spark_score_metrics: [metricsMap[s.id] ?? {}],
@@ -90,6 +95,7 @@ export default async function StartupDashboardPage() {
         const StatusIcon = status.icon
         const activeRequest = startup.research_requests?.find((r: any) => r.is_active) ?? null
         const anyRequest = startup.research_requests?.[0] ?? null
+        const criteriaAgg = criteriaMap[startup.id] as Record<string, number | string | undefined> | undefined
 
         return (
           <div key={startup.id} className="bg-white rounded-2xl border shadow-sm overflow-hidden">
@@ -253,10 +259,57 @@ export default async function StartupDashboardPage() {
                           Give structured feedback on three other startups to unlock reading incoming feedback on your own listings (and research breakdowns on this dashboard). You can still list in the Lab anytime using the switch above.
                         </li>
                         <li>When live, opted-in members can see your startup and leave structured feedback.</li>
-                        <li>Feedback covers whether they would use it, clarity, and written notes.</li>
+                        <li>Feedback covers whether they would use it, five scored criteria (1–10), and optional written notes.</li>
                       </ul>
                     </div>
                   </section>
+
+                  {givebackMet && (
+                    <>
+                      <section aria-labelledby={`rl-agg-${startup.id}`}>
+                        <h3 id={`rl-agg-${startup.id}`} className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Aggregate criteria scores
+                        </h3>
+                        {!criteriaAgg || Number(criteriaAgg.response_count ?? 0) === 0 ? (
+                          <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-muted-foreground">
+                            No scored responses yet. When testers submit feedback, averages appear here.
+                          </p>
+                        ) : (
+                          <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+                            <p className="text-xs text-muted-foreground">
+                              Based on <span className="font-semibold text-slate-700">{criteriaAgg.response_count}</span> Research Lab submissions (1–10 scale).
+                            </p>
+                            <div className="space-y-3">
+                              {RESEARCH_CRITERIA_DEFS.map(({ key, label }) => {
+                                const col = CRITERIA_AGGREGATE_FIELD[key]
+                                const val = criteriaAgg[col]
+                                const n = typeof val === 'number' ? val : Number(val ?? 0)
+                                const pct = Math.min(100, Math.round((n / 10) * 100))
+                                return (
+                                  <div key={key}>
+                                    <div className="mb-1 flex justify-between text-xs">
+                                      <span className="font-medium text-slate-800">{label}</span>
+                                      <span className="tabular-nums font-semibold text-orange-600">{n.toFixed(1)}/10</span>
+                                    </div>
+                                    <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                                      <div className="h-full rounded-full bg-orange-500 transition-all" style={{ width: `${pct}%` }} />
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </section>
+
+                      <section className="rounded-xl border border-dashed border-slate-300 bg-slate-50/80 p-4 text-sm text-slate-700">
+                        <p className="font-semibold text-slate-900">Detailed written feedback — Research Pro (coming soon)</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          You always have free aggregate scores above. Per-response notes, exports, and advanced filters will be part of a paid Research Pro tier so we can keep the Lab sustainable.
+                        </p>
+                      </section>
+                    </>
+                  )}
                 </div>
               </TabsContent>
             </Tabs>
