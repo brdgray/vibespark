@@ -489,7 +489,7 @@ export default async function StartupProfilePage({ params }: Props) {
             )}
 
             {/* Claim */}
-            {startup.verification_status === 'pending' && (
+            {startup.verification_status === 'pending' && !isOwner && (
               <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 text-sm">
                 <p className="font-medium text-orange-700">Is this your startup?</p>
                 <p className="text-orange-600 mt-0.5">
