@@ -32,6 +32,8 @@ interface ResearchLabClientProps {
   respondedIds: string[]
   /** Feedback given on startups the user does not own */
   feedbackToOthersCount?: number
+  /** Startups this user created (cannot submit Research Lab feedback on own listings) */
+  ownedStartupIds?: string[]
   preselectedRequest?: any | null
   requestedStartupSlug?: string | null
 }
@@ -42,6 +44,7 @@ export default function ResearchLabClient({
   isResearchParticipant,
   respondedIds,
   feedbackToOthersCount = 0,
+  ownedStartupIds = [],
   preselectedRequest,
   requestedStartupSlug,
 }: ResearchLabClientProps) {
@@ -64,9 +67,12 @@ export default function ResearchLabClient({
   const router = useRouter()
   const supabase = createClient()
 
-  // Auto-open modal when coming from a startup page
+  const isOwnListing = (request: { startup_id?: string }) =>
+    !!request?.startup_id && ownedStartupIds.includes(request.startup_id)
+
+  // Auto-open modal when coming from a startup page (never for your own listing)
   useEffect(() => {
-    if (preselectedRequest) {
+    if (preselectedRequest && !isOwnListing(preselectedRequest)) {
       openFeedback(preselectedRequest)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -118,7 +124,12 @@ export default function ResearchLabClient({
     })
 
     if (error) {
-      toast.error('Failed to submit feedback. Please try again.')
+      const msg = (error as { message?: string }).message ?? ''
+      if (/row-level security|RLS|violates|policy/i.test(msg)) {
+        toast.error('You can’t submit feedback on this listing (e.g. your own startup).')
+      } else {
+        toast.error('Failed to submit feedback. Please try again.')
+      }
     } else {
       setSubmitted(prev => [...prev, activeRequest.id])
       setActiveRequest(null)
@@ -128,8 +139,9 @@ export default function ResearchLabClient({
     setIsSubmitting(false)
   }
 
-  const pending = requests.filter(r => !submitted.includes(r.id))
+  const pending = requests.filter(r => !submitted.includes(r.id) && !isOwnListing(r))
   const done = requests.filter(r => submitted.includes(r.id))
+  const ownPending = requests.filter(r => !submitted.includes(r.id) && isOwnListing(r))
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-50">
@@ -200,6 +212,16 @@ export default function ResearchLabClient({
           ))}
         </div>
 
+        {/* Deep-linked to own startup that has an active request — do not auto-open modal; explain */}
+        {user && requestedStartupSlug && preselectedRequest && isOwnListing(preselectedRequest) && (
+          <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <p className="font-semibold text-slate-800">This is your startup</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Research Lab feedback must come from other founders and testers, not from your own account. Browse other products below.
+            </p>
+          </div>
+        )}
+
         {/* Banner: startup came from profile page but has no active research request */}
         {requestedStartupSlug && !preselectedRequest && (
           <div className="mb-6 rounded-2xl bg-blue-50 border border-blue-200 p-5 flex items-start gap-4">
@@ -209,6 +231,38 @@ export default function ResearchLabClient({
               <p className="text-sm text-blue-600 mt-0.5">
                 The founder can enable Research Lab feedback from their dashboard. In the meantime, browse other startups below.
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Own listings still in the lab (not eligible for self-feedback) */}
+        {user && ownPending.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">Your startups in the Lab</h2>
+            <p className="mb-4 text-sm text-muted-foreground">
+              You can&apos;t submit structured feedback on your own listing. Others will see it here when they opt in.
+            </p>
+            <div className="space-y-3 opacity-80">
+              {ownPending.map(request => (
+                <Card key={request.id} className="border-dashed">
+                  <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border bg-white">
+                        {request.startups?.logo_path ? (
+                          <Image src={request.startups.logo_path} alt="" width={48} height={48} className="object-contain" />
+                        ) : (
+                          <span className="text-lg font-bold text-slate-300">{request.startups?.name?.[0]}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-slate-800">{request.startups?.name}</div>
+                        <div className="text-xs text-muted-foreground">Your listing — self-feedback disabled</div>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="w-fit shrink-0">Yours</Badge>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
         )}

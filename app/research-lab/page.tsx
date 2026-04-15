@@ -45,9 +45,11 @@ export default async function ResearchLabPage({ searchParams }: Props) {
   // Feedback given on startups the user does not own (for “unlock” viewing others’ lab stats)
   let feedbackToOthersCount = 0
   let respondedIds: string[] = []
+  let ownedStartupIds: string[] = []
   if (user) {
     const { data: myStartups } = await supabase.from('startups').select('id').eq('created_by', user.id)
     const ownedIds = (myStartups ?? []).map((s: { id: string }) => s.id).filter(Boolean)
+    ownedStartupIds = ownedIds
 
     let countQuery = supabase
       .from('research_responses')
@@ -78,6 +80,7 @@ export default async function ResearchLabPage({ searchParams }: Props) {
       isResearchParticipant={isResearchParticipant}
       respondedIds={respondedIds}
       feedbackToOthersCount={feedbackToOthersCount}
+      ownedStartupIds={ownedStartupIds}
       preselectedRequest={preselectedRequest}
       requestedStartupSlug={searchParams.startup ?? null}
     />
