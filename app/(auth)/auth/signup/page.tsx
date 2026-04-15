@@ -10,6 +10,10 @@ import { Label } from '@/components/ui/label'
 import { useRouter } from 'next/navigation'
 import { demographicsSchema } from '@/lib/validations/auth'
 import DemographicsFormFields from '@/components/user/DemographicsFormFields'
+import {
+  hasPartialResearchDemographicsInput,
+  isResearchDemographicsComplete,
+} from '@/lib/utils/research-demographics-form'
 
 function GoogleIcon() {
   return (
@@ -20,16 +24,6 @@ function GoogleIcon() {
       <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
     </svg>
   )
-}
-
-function demographicsStarted(
-  ageRange: string,
-  country: string,
-  profession: string,
-  industry: string,
-  personas: string[],
-) {
-  return !!(ageRange || country.trim() || profession || industry || personas.length > 0)
 }
 
 export default function SignUpPage() {
@@ -88,9 +82,25 @@ export default function SignUpPage() {
       return
     }
 
-    const started = demographicsStarted(ageRange, country, profession, industry, selectedPersonas)
+    const demoState = {
+      ageRange,
+      country,
+      profession,
+      industry,
+      personaKeys: selectedPersonas,
+      technicalLevel,
+    }
+    const partial = hasPartialResearchDemographicsInput(demoState)
+    const complete = isResearchDemographicsComplete(demoState)
+
     let demographicsPayload: Record<string, string> | undefined
-    if (started) {
+    if (partial && !complete) {
+      setError(
+        'Research Lab profile is optional. Clear any fields you started, or finish all of: age range, country (2+ characters), profession, industry, and at least one “I am a…” option.',
+      )
+      return
+    }
+    if (complete) {
       const parsed = demographicsSchema.safeParse({
         ageRange,
         country: country.trim(),
@@ -100,7 +110,7 @@ export default function SignUpPage() {
         technicalLevel: technicalLevel || undefined,
       })
       if (!parsed.success) {
-        setError(parsed.error.issues[0]?.message ?? 'Complete all research fields or clear them.')
+        setError(parsed.error.issues[0]?.message ?? 'Check the research fields below.')
         return
       }
       const d = parsed.data
@@ -241,7 +251,7 @@ export default function SignUpPage() {
             <div>
               <h2 className="text-sm font-semibold text-slate-900">Research Lab profile</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Same options as Edit Profile → Research Demographics. Optional: leave blank and add later.
+                Same options as Edit Profile → Research Demographics. Leave the whole section blank to skip, or fill every field if you want it saved now.
               </p>
             </div>
             <DemographicsFormFields

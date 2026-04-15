@@ -50,7 +50,7 @@ export default function DemographicsFormFields({
   const helper =
     variant === 'profile'
       ? 'Required to participate in the Research Lab. Founders see aggregated breakdowns only.'
-      : 'Optional now — if you fill any part, complete all required fields below. Same options as your profile.'
+      : 'Optional — leave everything blank and add this later in your profile. If you enter anything here, finish every field so we can save your Research Lab demographics.'
 
   return (
     <div className="space-y-4">

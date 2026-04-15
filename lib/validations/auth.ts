@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { AGE_RANGES } from '@/lib/constants/research-demographics'
 
 export const signInSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -13,9 +14,11 @@ export const signUpSchema = z.object({
 })
 
 export const demographicsSchema = z.object({
-  ageRange: z.enum(['under-18', '18-24', '25-34', '35-44', '45-54', '55+']),
+  ageRange: z
+    .string()
+    .refine(v => (AGE_RANGES as readonly string[]).includes(v), { message: 'Select an age range' }),
   gender: z.string().optional(),
-  country: z.string().min(2, 'Country is required'),
+  country: z.string().trim().min(2, 'Enter your country (at least 2 characters)'),
   profession: z.string().min(1, 'Select your profession / role'),
   industry: z.string().min(1, 'Select your industry'),
   /** Comma-separated persona keys (same as profile / research_demographics.persona_type) */

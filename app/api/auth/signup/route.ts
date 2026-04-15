@@ -1,6 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { demographicsSchema } from '@/lib/validations/auth'
+import {
+  hasPartialResearchDemographicsInput,
+  isResearchDemographicsComplete,
+} from '@/lib/utils/research-demographics-form'
 
 type DemographicsBody = {
   ageRange: string
@@ -32,20 +36,45 @@ export async function POST(request: Request) {
     )
   }
 
+  let demographicsToSave: DemographicsBody | undefined = demographics
   if (demographics) {
-    const parsed = demographicsSchema.safeParse({
-      ageRange: demographics.ageRange,
-      country: demographics.country?.trim(),
-      profession: demographics.profession,
-      industry: demographics.industry,
-      personaType: demographics.personaType,
-      technicalLevel: demographics.technicalLevel || undefined,
-    })
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? 'Invalid demographics' },
-        { status: 400 },
-      )
+    const state = {
+      ageRange: demographics.ageRange ?? '',
+      country: demographics.country ?? '',
+      profession: demographics.profession ?? '',
+      industry: demographics.industry ?? '',
+      personaKeys: (demographics.personaType ?? '')
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean),
+      technicalLevel: demographics.technicalLevel ?? '',
+    }
+    if (!isResearchDemographicsComplete(state)) {
+      if (hasPartialResearchDemographicsInput(state)) {
+        return NextResponse.json(
+          {
+            error:
+              'Research demographics are optional. Omit them entirely, or provide age range, country (2+ characters), profession, industry, and at least one persona.',
+          },
+          { status: 400 },
+        )
+      }
+      demographicsToSave = undefined
+    } else {
+      const parsed = demographicsSchema.safeParse({
+        ageRange: demographics.ageRange,
+        country: demographics.country?.trim(),
+        profession: demographics.profession,
+        industry: demographics.industry,
+        personaType: demographics.personaType,
+        technicalLevel: demographics.technicalLevel || undefined,
+      })
+      if (!parsed.success) {
+        return NextResponse.json(
+          { error: parsed.error.issues[0]?.message ?? 'Invalid demographics' },
+          { status: 400 },
+        )
+      }
     }
   }
 
@@ -100,14 +129,14 @@ export async function POST(request: Request) {
       .from('user_score_events' as any)
       .insert({ user_id: data.user.id, event_type: 'signup_bonus', points: 10 })
 
-    if (demographics) {
+    if (demographicsToSave) {
       const d = demographicsSchema.parse({
-        ageRange: demographics.ageRange,
-        country: demographics.country.trim(),
-        profession: demographics.profession,
-        industry: demographics.industry,
-        personaType: demographics.personaType,
-        technicalLevel: demographics.technicalLevel || undefined,
+        ageRange: demographicsToSave.ageRange,
+        country: demographicsToSave.country.trim(),
+        profession: demographicsToSave.profession,
+        industry: demographicsToSave.industry,
+        personaType: demographicsToSave.personaType,
+        technicalLevel: demographicsToSave.technicalLevel || undefined,
       })
       await adminClient.from('research_demographics').upsert(
         {
