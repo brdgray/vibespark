@@ -132,7 +132,7 @@ export default function EditStartupForm({ startup, categories, stages, screensho
         founded_at: foundedAt ? `${foundedAt}-01` : null,
         location: location.trim() || null,
         team_size: teamSize ? Number(teamSize) : null,
-        ai_stack: aiStack.trim() ? aiStack.split(',').map(s => s.trim()).filter(Boolean) : null,
+        ai_stack: aiStack.trim() ? aiStack.split(',').map((s: string) => s.trim()).filter(Boolean) : null,
         ...(adminMode ? { verification_status: verificationStatus } : {}),
       })
       .eq('id', startup.id)

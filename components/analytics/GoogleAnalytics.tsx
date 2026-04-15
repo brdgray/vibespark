@@ -1,8 +1,11 @@
 'use client'
 
 import { useEffect } from 'react'
+import Script from 'next/script'
+import { usePathname, useSearchParams } from 'next/navigation'
 
-const GA_MEASUREMENT_ID = 'G-6BTGGGWEG9'
+const GA_MEASUREMENT_ID =
+  process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-6BTGGGWEG9'
 
 declare global {
   interface Window {
@@ -17,26 +20,32 @@ declare global {
  * add a link preload that triggers "preloaded but not used" warnings.
  */
 export default function GoogleAnalytics() {
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if (window.__vibespark_ga_init) return
-    window.__vibespark_ga_init = true
+    if (!window.gtag || !pathname) return
+    const query = searchParams?.toString()
+    const pagePath = query ? `${pathname}?${query}` : pathname
+    window.gtag('config', GA_MEASUREMENT_ID, { page_path: pagePath })
+  }, [pathname, searchParams])
 
-    window.dataLayer = window.dataLayer || []
-    // Match Google's stub — queues until gtag.js loads (uses `arguments`, not rest).
-    window.gtag = function gtag() {
-      // eslint-disable-next-line prefer-rest-params
-      window.dataLayer.push(arguments as unknown)
-    }
-
-    window.gtag('js', new Date())
-    window.gtag('config', GA_MEASUREMENT_ID)
-
-    const script = document.createElement('script')
-    script.async = true
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`
-    document.head.appendChild(script)
-  }, [])
-
-  return null
+  return (
+    <>
+      <Script
+        src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+        strategy="afterInteractive"
+      />
+      <Script id="ga-setup" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          window.gtag = gtag;
+          gtag('js', new Date());
+          gtag('config', '${GA_MEASUREMENT_ID}');
+        `}
+      </Script>
+    </>
+  )
 }
