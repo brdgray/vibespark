@@ -63,14 +63,29 @@ export default async function StartupProfilePage({ params }: Props) {
     .eq('slug', params.slug)
     .single()
 
+  const { data: { user } } = await supabase.auth.getUser()
   const startup = startupData as any
   if (!startup || startup.verification_status === 'rejected') notFound()
+
+  // Hide inactive/suspended startups from live profile except owner/admin.
+  if (startup.verification_status === 'inactive' || startup.verification_status === 'suspended') {
+    const isOwner = !!(user && startup.created_by === user.id)
+    let isAdmin = false
+    if (user && !isOwner) {
+      const { data: roleRow } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle()
+      isAdmin = !!roleRow
+    }
+    if (!isOwner && !isAdmin) notFound()
+  }
 
   // Fetch metrics separately (view — no FK for auto-join)
   const metricsMap = await fetchMetricsMap(supabase, [startup.id])
   startup.startup_spark_score_metrics = [metricsMap[startup.id] ?? {}]
-
-  const { data: { user } } = await supabase.auth.getUser()
 
   const isOwnerProfile = !!(user && startup.created_by === user.id)
   const feedbackToOthersCount = user ? await fetchFeedbackToOthersCount(supabase, user.id) : 0

@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type VerificationStatus = 'pending' | 'verified' | 'rejected' | 'suspended'
+export type VerificationStatus = 'pending' | 'verified' | 'rejected' | 'suspended' | 'inactive'
 export type WouldUse = 'yes' | 'maybe' | 'no'
 export type UserRole = 'user' | 'startup_owner' | 'admin'
 export type VoteType = 'support'

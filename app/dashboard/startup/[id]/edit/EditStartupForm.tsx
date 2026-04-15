@@ -18,6 +18,7 @@ interface EditStartupFormProps {
   categories: any[]
   stages: any[]
   screenshots: Array<{ id: string; storage_path: string; display_order: number }>
+  adminMode?: boolean
 }
 
 interface TeamMemberInput {
@@ -39,7 +40,7 @@ function parseMonth(date: string | null): string {
   return String(date).slice(0, 7)
 }
 
-export default function EditStartupForm({ startup, categories, stages, screenshots }: EditStartupFormProps) {
+export default function EditStartupForm({ startup, categories, stages, screenshots, adminMode = false }: EditStartupFormProps) {
   const supabase = createClient()
   const router = useRouter()
 
@@ -52,6 +53,7 @@ export default function EditStartupForm({ startup, categories, stages, screensho
   const [stageId, setStageId] = useState(startup.stage_id ?? '')
   const [targetAudience, setTargetAudience] = useState(startup.target_audience ?? '')
   const [pricingModel, setPricingModel] = useState(startup.pricing_model ?? '')
+  const [verificationStatus, setVerificationStatus] = useState(startup.verification_status ?? 'pending')
   const [foundedAt, setFoundedAt] = useState(parseMonth(startup.founded_at))
   const [location, setLocation] = useState(startup.location ?? '')
   const [teamSize, setTeamSize] = useState(startup.team_size ? String(startup.team_size) : '')
@@ -131,6 +133,7 @@ export default function EditStartupForm({ startup, categories, stages, screensho
         location: location.trim() || null,
         team_size: teamSize ? Number(teamSize) : null,
         ai_stack: aiStack.trim() ? aiStack.split(',').map(s => s.trim()).filter(Boolean) : null,
+        ...(adminMode ? { verification_status: verificationStatus } : {}),
       })
       .eq('id', startup.id)
 
@@ -212,6 +215,25 @@ export default function EditStartupForm({ startup, categories, stages, screensho
       <div className="rounded-2xl border bg-white p-5 space-y-4">
         <h2 className="font-semibold text-slate-900">Basic Info</h2>
         <div className="grid gap-4 sm:grid-cols-2">
+          {adminMode && (
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Status</Label>
+              <select
+                className="w-full h-9 rounded-md border px-3 text-sm"
+                value={verificationStatus}
+                onChange={e => setVerificationStatus(e.target.value)}
+              >
+                <option value="pending">Pending</option>
+                <option value="verified">Verified</option>
+                <option value="rejected">Rejected</option>
+                <option value="inactive">Inactive</option>
+                <option value="suspended">Suspended</option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Inactive and suspended startups are hidden from the public live site.
+              </p>
+            </div>
+          )}
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Name *</Label>
             <Input value={name} onChange={e => setName(e.target.value)} />

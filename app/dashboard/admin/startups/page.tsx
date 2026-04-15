@@ -15,6 +15,9 @@ export default async function AdminStartupsPage({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/signin')
+  const { data: roleRow } = await supabase
+    .from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').maybeSingle()
+  if (!roleRow) redirect('/dashboard')
 
   const filter = searchParams.filter ?? 'all'
 
@@ -26,6 +29,8 @@ export default async function AdminStartupsPage({
   if (filter === 'pending')  query = query.eq('verification_status', 'pending')
   if (filter === 'verified') query = query.eq('verification_status', 'verified')
   if (filter === 'rejected') query = query.eq('verification_status', 'rejected')
+  if (filter === 'inactive') query = query.eq('verification_status', 'inactive')
+  if (filter === 'suspended') query = query.eq('verification_status', 'suspended')
 
   const { data: startups } = await query
 
@@ -37,6 +42,8 @@ export default async function AdminStartupsPage({
     { key: 'pending',  label: 'Pending' },
     { key: 'verified', label: 'Verified' },
     { key: 'rejected', label: 'Rejected' },
+    { key: 'inactive', label: 'Inactive' },
+    { key: 'suspended', label: 'Suspended' },
   ]
 
   return (
@@ -93,10 +100,14 @@ export default async function AdminStartupsPage({
                   <Badge className={
                     s.verification_status === 'verified' ? 'bg-green-100 text-green-700 border-green-200' :
                     s.verification_status === 'pending'  ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                    s.verification_status === 'inactive' ? 'bg-slate-100 text-slate-700 border-slate-200' :
                     'bg-red-100 text-red-700 border-red-200'
                   }>
                     {s.verification_status}
                   </Badge>
+                  <Link href={`/dashboard/admin/startups/${s.id}`} className="text-xs font-medium text-blue-600 hover:text-blue-700">
+                    Manage
+                  </Link>
                   <span className="text-xs text-muted-foreground">
                     {new Date(s.created_at).toLocaleDateString()}
                   </span>

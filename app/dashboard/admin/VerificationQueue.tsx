@@ -79,6 +79,9 @@ export default function VerificationQueue({ startups: initial }: VerificationQue
                 {expanded === startup.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 Details
               </button>
+              <Link href={`/dashboard/admin/startups/${startup.id}`} className="text-xs font-medium text-blue-600 hover:text-blue-700">
+                Manage
+              </Link>
               <Button
                 size="sm"
                 variant="outline"
