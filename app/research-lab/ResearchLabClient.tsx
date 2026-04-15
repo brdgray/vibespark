@@ -305,14 +305,6 @@ export default function ResearchLabClient({
           </div>
         )}
 
-        {/* Startup not in research lab */}
-        {preselectedRequest === null && typeof preselectedRequest !== 'undefined' && requests.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-sm text-amber-800 mb-8">
-            <p className="font-semibold mb-1">This startup hasn&apos;t joined the Research Lab yet</p>
-            <p>The founder hasn&apos;t opened a research request for this product. Browse available products below.</p>
-          </div>
-        )}
-
         {/* Completed */}
         {done.length > 0 && (
           <div>

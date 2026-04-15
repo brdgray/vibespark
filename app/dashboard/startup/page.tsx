@@ -81,16 +81,10 @@ export default async function StartupDashboardPage() {
       {/* One card per startup */}
       {startups.map((startup: any) => {
         const rawMetrics = startup.startup_spark_score_metrics?.[0] ?? {}
+        /** Would-use % stays public; only hide raw response count until give-back. */
         const metrics = givebackMet
           ? rawMetrics
-          : {
-              ...rawMetrics,
-              total_research_responses: 0,
-              would_use_yes: 0,
-              would_use_maybe: 0,
-              would_use_no: 0,
-              would_use_pct: 0,
-            }
+          : { ...rawMetrics, total_research_responses: 0 }
         const status = statusConfig[startup.verification_status as keyof typeof statusConfig] ?? statusConfig.pending
         const StatusIcon = status.icon
         const activeRequest = startup.research_requests?.find((r: any) => r.is_active) ?? null
@@ -159,7 +153,7 @@ export default async function StartupDashboardPage() {
                       <p className="font-semibold">Unlock incoming Research Lab feedback</p>
                       <p className="mt-1 text-xs text-amber-800">
                         Give structured feedback on {RESEARCH_GIVEBACK_REQUIRED - feedbackToOthersCount} more startup
-                        {RESEARCH_GIVEBACK_REQUIRED - feedbackToOthersCount === 1 ? '' : 's'} you don&apos;t own to read feedback others left on your listings. Research counts and breakdown below stay hidden until then.
+                        {RESEARCH_GIVEBACK_REQUIRED - feedbackToOthersCount === 1 ? '' : 's'} you don&apos;t own to read individual responses and full Research Lab detail. Would-use % and chart below stay visible for everyone.
                       </p>
                       <LinkButton href="/research-lab" size="sm" variant="outline" className="mt-3 border-amber-300 text-amber-900">
                         Go to Research Lab
@@ -175,10 +169,8 @@ export default async function StartupDashboardPage() {
                         { label: 'Spark Score',       value: <SparkScore score={Math.round(metrics.spark_score ?? 0)} size="sm" /> },
                         {
                           label: 'Would Use',
-                          value: givebackMet ? (
+                          value: (
                             <span className="text-2xl font-bold text-green-600">{Math.round(rawMetrics.would_use_pct ?? 0)}%</span>
-                          ) : (
-                            <span className="text-2xl font-bold text-amber-600">—</span>
                           ),
                         },
                         { label: 'Supporters',         value: <span className="text-2xl font-bold text-orange-500">{metrics.support_count ?? 0}</span> },
@@ -207,15 +199,7 @@ export default async function StartupDashboardPage() {
                     <h3 id={`chart-${startup.id}`} className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Would use breakdown
                     </h3>
-                    {!givebackMet ? (
-                      <div className="rounded-xl border border-amber-100 bg-amber-50/80 py-10 text-center text-amber-900">
-                        <Zap className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                        <p className="text-sm font-medium">Would-use breakdown is locked</p>
-                        <p className="mt-1 px-4 text-xs text-amber-800">
-                          Complete {RESEARCH_GIVEBACK_REQUIRED} feedback sessions on other startups to see how testers rated yours.
-                        </p>
-                      </div>
-                    ) : (rawMetrics.would_use_yes || rawMetrics.would_use_maybe || rawMetrics.would_use_no) ? (
+                    {(rawMetrics.would_use_yes || rawMetrics.would_use_maybe || rawMetrics.would_use_no) ? (
                       <StartupMetricsChart
                         wouldUseYes={rawMetrics.would_use_yes ?? 0}
                         wouldUseMaybe={rawMetrics.would_use_maybe ?? 0}
