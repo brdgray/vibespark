@@ -116,9 +116,14 @@ export default async function StartupDashboardPage() {
                     )}
                   </div>
                 </div>
-                <LinkButton href={`/startups/${startup.slug}`} variant="outline" size="sm" className="shrink-0">
-                  View Profile
-                </LinkButton>
+                <div className="flex shrink-0 items-center gap-2">
+                  <LinkButton href={`/dashboard/startup/${startup.id}/edit`} variant="outline" size="sm">
+                    Edit Profile
+                  </LinkButton>
+                  <LinkButton href={`/startups/${startup.slug}`} variant="outline" size="sm">
+                    View Profile
+                  </LinkButton>
+                </div>
               </div>
             </div>
 

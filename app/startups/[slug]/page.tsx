@@ -155,6 +155,12 @@ export default async function StartupProfilePage({ params }: Props) {
             </div>
             <div className="flex items-center gap-2">
               <Link
+                href={`/dashboard/startup/${startup.id}/edit`}
+                className="inline-flex items-center gap-1.5 rounded-full border border-orange-300 bg-white text-orange-700 hover:bg-orange-100 text-xs font-semibold px-3 py-1.5 transition-colors"
+              >
+                <PencilLine className="h-3 w-3" /> Edit Profile
+              </Link>
+              <Link
                 href="/dashboard/startup"
                 className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-3 py-1.5 transition-colors"
               >

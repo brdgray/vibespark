@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -78,6 +79,9 @@ export default function AdminUsersClient({ users }: AdminUsersClientProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
+                  <Link href={`/dashboard/admin/users/${u.id}`} className="text-xs font-medium text-blue-600 hover:text-blue-700">
+                    View activity
+                  </Link>
                   {u.is_research_participant && (
                     <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-xs">Research</Badge>
                   )}
