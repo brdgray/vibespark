@@ -15,11 +15,21 @@ export const signUpSchema = z.object({
 export const demographicsSchema = z.object({
   ageRange: z.enum(['under-18', '18-24', '25-34', '35-44', '45-54', '55+']),
   gender: z.string().optional(),
-  country: z.string().min(2, 'Please select your country'),
-  profession: z.string().min(2, 'Please enter your profession'),
-  industry: z.string().min(2, 'Please select your industry'),
-  personaType: z.enum(['founder', 'employee', 'student', 'consumer', 'investor']),
-  technicalLevel: z.enum(['non-technical', 'basic', 'intermediate', 'advanced']).optional(),
+  country: z.string().min(2, 'Country is required'),
+  profession: z.string().min(1, 'Select your profession / role'),
+  industry: z.string().min(1, 'Select your industry'),
+  /** Comma-separated persona keys (same as profile / research_demographics.persona_type) */
+  personaType: z
+    .string()
+    .min(1, 'Select at least one “I am a…” option')
+    .refine(s => s.split(',').map(x => x.trim()).filter(Boolean).length >= 1, 'Select at least one “I am a…” option'),
+  technicalLevel: z
+    .string()
+    .optional()
+    .refine(
+      v => !v || ['non-technical', 'basic', 'intermediate', 'advanced'].includes(v),
+      'Invalid technical level',
+    ),
 })
 
 export type SignInInput = z.infer<typeof signInSchema>

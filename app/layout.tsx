@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import GoogleAnalytics from '@/components/analytics/GoogleAnalytics'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { createClient } from '@/lib/supabase/server'
@@ -51,6 +52,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en">
       <body className={`${inter.className} min-h-screen flex flex-col bg-white antialiased`}>
+        <GoogleAnalytics />
         <Navbar user={user} profile={profile} role={role} />
         <main className="flex-1">
           {children}

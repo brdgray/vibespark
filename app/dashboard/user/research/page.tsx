@@ -12,7 +12,10 @@ export default async function ResearchPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/signin')
 
-  const { data: responses } = await supabase
+  const { data: myStartups } = await supabase.from('startups').select('id').eq('created_by', user.id)
+  const ownedIds = (myStartups ?? []).map((s: { id: string }) => s.id).filter(Boolean)
+
+  let responsesQuery = supabase
     .from('research_responses')
     .select(`
       created_at, would_use, clarity_score, missing_features, friction_points,
@@ -20,6 +23,12 @@ export default async function ResearchPage() {
     `)
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
+
+  if (ownedIds.length > 0) {
+    responsesQuery = responsesQuery.not('startup_id', 'in', `(${ownedIds.join(',')})`)
+  }
+
+  const { data: responses } = await responsesQuery
 
   const wouldUseConfig = {
     yes:   { label: '👍 Would Use',     color: 'bg-green-100 text-green-700 border-green-200' },
@@ -33,10 +42,10 @@ export default async function ResearchPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Research Given</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
-            {responses?.length ?? 0} feedback responses submitted
+            {responses?.length ?? 0} feedback responses on other startups
             {(responses?.length ?? 0) < 3 && (
               <span className="ml-2 text-amber-600 font-medium">
-                — give feedback on {3 - (responses?.length ?? 0)} more startups to unlock your own research
+                — {3 - (responses?.length ?? 0)} more to unlock full Research Lab insights on other startups (your own listing is separate)
               </span>
             )}
           </p>
@@ -46,11 +55,12 @@ export default async function ResearchPage() {
         </LinkButton>
       </div>
 
-      {/* Progress toward unlock */}
       {(responses?.length ?? 0) < 3 && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-          <p className="text-sm font-semibold text-amber-800 mb-2">Unlock your startup feedback</p>
-          <p className="text-xs text-amber-600 mb-3">Give feedback on 3 startups to unlock research responses for your own startup.</p>
+          <p className="text-sm font-semibold text-amber-800 mb-2">Unlock Research Lab insights</p>
+          <p className="text-xs text-amber-600 mb-3">
+            After 3 structured feedbacks on other startups (not your own), you can see response totals and fuller activity for other founders in the Lab. Adding your startup to Research Lab is controlled from your startup dashboard and does not depend on this.
+          </p>
           <div className="flex gap-2">
             {[0, 1, 2].map(i => (
               <div key={i} className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${

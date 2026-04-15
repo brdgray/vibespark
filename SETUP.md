@@ -44,6 +44,19 @@ In Supabase → **Storage**, create these buckets:
 3. Add redirect URI: `https://YOUR_SUPABASE_PROJECT.supabase.co/auth/v1/callback`
 4. In Supabase → **Authentication → Providers**, enable Google and add client ID/secret
 
+### 6a. Localhost vs production (same Supabase project)
+
+You do **not** need a separate Supabase project for local dev. Supabase will send the browser back to whatever `redirectTo` the app sends **only if** that URL is allowlisted.
+
+1. In Supabase → **Authentication → URL Configuration**
+2. Under **Redirect URLs**, add (adjust port if needed):
+   - `http://localhost:3000/**`
+   - `http://127.0.0.1:3000/**`
+3. Add your production site too, e.g. `https://yourdomain.com/**`
+4. **Site URL** is the default when a redirect is invalid or missing — set it to your primary production URL, but the entries above are what allow localhost to work.
+
+If localhost is missing, Supabase often falls back to **Site URL** and you land on production after login.
+
 ## 7. Set Admin Role
 
 After creating your account, run this in the SQL Editor:

@@ -17,11 +17,15 @@ import {
 import Link from 'next/link'
 import Image from 'next/image'
 
+const FEEDBACK_TO_UNLOCK_INSIGHTS = 3
+
 interface ResearchLabClientProps {
   requests: any[]
   user: any
   isResearchParticipant: boolean
   respondedIds: string[]
+  /** Feedback given on startups the user does not own */
+  feedbackToOthersCount?: number
   preselectedRequest?: any | null
   requestedStartupSlug?: string | null
 }
@@ -31,9 +35,14 @@ export default function ResearchLabClient({
   user,
   isResearchParticipant,
   respondedIds,
+  feedbackToOthersCount = 0,
   preselectedRequest,
   requestedStartupSlug,
 }: ResearchLabClientProps) {
+  const canViewOthersLabStats = feedbackToOthersCount >= FEEDBACK_TO_UNLOCK_INSIGHTS
+  /** Logged-in users under the threshold cannot see others’ response totals; guests still see them. */
+  const showOthersInsights = !user || canViewOthersLabStats
+  const remainingToUnlock = Math.max(0, FEEDBACK_TO_UNLOCK_INSIGHTS - feedbackToOthersCount)
   const [activeRequest, setActiveRequest] = useState<any | null>(null)
   const [submitted, setSubmitted] = useState<string[]>(respondedIds)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -140,16 +149,41 @@ export default function ResearchLabClient({
       </div>
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
+        {user && !showOthersInsights && (
+          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="font-semibold text-amber-900">Unlock Research Lab insights for other startups</p>
+                <p className="mt-1 text-sm text-amber-800">
+                  Your own startup can still appear in the Lab from your dashboard. To see response totals and activity on other founders&apos; products here, give structured feedback on{' '}
+                  {remainingToUnlock === 1 ? 'one more startup' : `${remainingToUnlock} more startups`} (not your own).
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5 self-start rounded-full border border-amber-200 bg-white px-3 py-1.5 text-sm font-semibold text-amber-900">
+                {feedbackToOthersCount}/{FEEDBACK_TO_UNLOCK_INSIGHTS}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           {[
             { label: 'Awaiting Feedback', value: pending.length, color: 'text-blue-600' },
             { label: 'Completed', value: done.length, color: 'text-green-600' },
-            { label: 'Total Products', value: requests.length, color: 'text-slate-700' },
+            {
+              label: 'Products in Lab',
+              value: showOthersInsights ? requests.length : '—',
+              color: showOthersInsights ? 'text-slate-700' : 'text-amber-600',
+              sub: !showOthersInsights && user ? 'Unlock at 3 feedbacks' : undefined,
+            },
           ].map(s => (
             <div key={s.label} className="bg-white rounded-2xl border p-4 text-center">
               <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
               <div className="text-xs text-muted-foreground mt-0.5">{s.label}</div>
+              {'sub' in s && s.sub && (
+                <div className="mt-1 text-[10px] font-medium text-amber-700">{s.sub}</div>
+              )}
             </div>
           ))}
         </div>
@@ -213,8 +247,17 @@ export default function ResearchLabClient({
                             <span className="font-medium">Founder asks: </span>{request.prompt}
                           </p>
                         )}
-                        <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                          <span>{request.startups?.startup_spark_score_metrics?.[0]?.total_research_responses ?? 0} responses so far</span>
+                        <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-muted-foreground">
+                          {showOthersInsights ? (
+                            <span>
+                              {request.startups?.startup_spark_score_metrics?.[0]?.total_research_responses ?? 0} responses so far
+                            </span>
+                          ) : (
+                            <span className="text-amber-700">
+                              Response total hidden — give {remainingToUnlock} more structured feedback
+                              {remainingToUnlock === 1 ? '' : 's'} on other startups to unlock
+                            </span>
+                          )}
                           {request.ends_at && (
                             <span>Ends {new Date(request.ends_at).toLocaleDateString()}</span>
                           )}

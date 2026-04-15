@@ -1,15 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { demographicsSchema, type DemographicsInput } from '@/lib/validations/auth'
+import { demographicsSchema } from '@/lib/validations/auth'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import DemographicsFormFields from '@/components/user/DemographicsFormFields'
 
 const steps = ['Welcome', 'Research Panel', 'Demographics']
 
@@ -18,34 +15,72 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(0)
   const [joinResearch, setJoinResearch] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<DemographicsInput>({
-    resolver: zodResolver(demographicsSchema),
-  })
+  const [ageRange, setAgeRange] = useState('')
+  const [country, setCountry] = useState('')
+  const [profession, setProfession] = useState('')
+  const [industry, setIndustry] = useState('')
+  const [selectedPersonas, setSelectedPersonas] = useState<string[]>([])
+  const [technicalLevel, setTechnicalLevel] = useState('')
 
   const supabase = createClient()
 
-  async function handleFinish(data?: DemographicsInput) {
+  function togglePersona(key: string) {
+    setSelectedPersonas(prev =>
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key],
+    )
+  }
+
+  async function saveDemographicsAndFinish() {
+    setFormError(null)
+    const parsed = demographicsSchema.safeParse({
+      ageRange,
+      country: country.trim(),
+      profession,
+      industry,
+      personaType: selectedPersonas.join(','),
+      technicalLevel: technicalLevel || undefined,
+    })
+    if (!parsed.success) {
+      setFormError(parsed.error.issues[0]?.message ?? 'Please check the form')
+      return
+    }
     setIsLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/auth/signin'); return }
-
-    if (joinResearch && data) {
-      await (supabase.from('profiles') as any).update({ is_research_participant: true }).eq('id', user.id)
-      await (supabase.from('research_demographics') as any).upsert({
-        user_id: user.id,
-        age_range: data.ageRange,
-        gender: data.gender || null,
-        country: data.country,
-        profession: data.profession,
-        industry: data.industry,
-        persona_type: data.personaType,
-        technical_level: data.technicalLevel || null,
-      })
+    if (!user) {
+      router.push('/auth/signin')
+      return
     }
+    const d = parsed.data
+    await (supabase.from('profiles') as any).update({ is_research_participant: true }).eq('id', user.id)
+    await (supabase.from('research_demographics') as any).upsert({
+      user_id: user.id,
+      age_range: d.ageRange,
+      gender: null,
+      country: d.country,
+      profession: d.profession,
+      industry: d.industry,
+      persona_type: selectedPersonas.join(','),
+      technical_level: d.technicalLevel || null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' })
 
     router.push('/')
     router.refresh()
+  }
+
+  async function handleFinish() {
+    setIsLoading(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setIsLoading(false)
+      router.push('/auth/signin')
+      return
+    }
+    router.push('/')
+    router.refresh()
+    setIsLoading(false)
   }
 
   async function skipDemographics() {
@@ -61,9 +96,8 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-      <Card className="w-full max-w-lg">
-        {/* Progress indicator */}
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-8">
+      <Card className="w-full max-w-xl">
         <div className="px-6 pt-6">
           <div className="flex gap-1.5">
             {steps.map((s, i) => (
@@ -110,6 +144,7 @@ export default function OnboardingPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <button
+                type="button"
                 onClick={() => { setJoinResearch(true); setStep(2) }}
                 className={`w-full text-left rounded-2xl border-2 p-4 transition-colors hover:border-orange-400 ${
                   joinResearch === true ? 'border-orange-500 bg-orange-50' : 'border-border'
@@ -117,10 +152,11 @@ export default function OnboardingPage() {
               >
                 <div className="font-medium">Yes, I want to participate</div>
                 <div className="text-sm text-muted-foreground mt-0.5">
-                  I&apos;ll provide optional demographic info so founders can see segmented insights.
+                  I&apos;ll provide demographic info (same options as your profile) so founders can see segmented insights.
                 </div>
               </button>
               <button
+                type="button"
                 onClick={() => { setJoinResearch(false); handleFinish() }}
                 className="w-full text-left rounded-2xl border-2 border-border p-4 transition-colors hover:border-slate-400"
               >
@@ -138,75 +174,43 @@ export default function OnboardingPage() {
             <CardHeader>
               <CardTitle>About You</CardTitle>
               <CardDescription>
-                This helps founders see which types of users respond to their products. All fields are optional
-                except age range, country, profession, and persona.
+                Same fields as Edit Profile → Research Demographics. Required to join the Research Panel.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit(handleFinish)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>Age Range</Label>
-                    <select
-                      onChange={e => setValue('ageRange', e.target.value as DemographicsInput['ageRange'])}
-                      className="w-full h-9 appearance-none rounded-2xl border border-input bg-background px-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 cursor-pointer text-foreground"
-                    >
-                      <option value="" disabled selected>Select...</option>
-                      {['under-18','18-24','25-34','35-44','45-54','55+'].map(r => (
-                        <option key={r} value={r}>{r}</option>
-                      ))}
-                    </select>
-                    {errors.ageRange && <p className="text-xs text-destructive">{errors.ageRange.message}</p>}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Country</Label>
-                    <Input placeholder="United States" {...register('country')} />
-                    {errors.country && <p className="text-xs text-destructive">{errors.country.message}</p>}
-                  </div>
+            <CardContent className="space-y-4">
+              {formError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {formError}
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Profession / Role</Label>
-                  <Input placeholder="e.g. Software Engineer, Designer, CEO" {...register('profession')} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>Industry</Label>
-                    <Input placeholder="e.g. SaaS, Fintech, Healthcare" {...register('industry')} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>I am a...</Label>
-                    <select
-                      onChange={e => setValue('personaType', e.target.value as DemographicsInput['personaType'])}
-                      className="w-full h-9 appearance-none rounded-2xl border border-input bg-background px-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 cursor-pointer text-foreground capitalize"
-                    >
-                      <option value="" disabled selected>Select...</option>
-                      {['founder','employee','student','consumer','investor'].map(p => (
-                        <option key={p} value={p} className="capitalize">{p}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Technical Level (optional)</Label>
-                  <select
-                    onChange={e => setValue('technicalLevel', e.target.value as DemographicsInput['technicalLevel'])}
-                    className="w-full h-9 appearance-none rounded-2xl border border-input bg-background px-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 cursor-pointer text-foreground capitalize"
-                  >
-                    <option value="" disabled selected>Select...</option>
-                    {['non-technical','basic','intermediate','advanced'].map(l => (
-                      <option key={l} value={l} className="capitalize">{l}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <Button type="button" variant="outline" onClick={skipDemographics} disabled={isLoading}>
-                    Skip for now
-                  </Button>
-                  <Button type="submit" className="flex-1 bg-orange-500 hover:bg-orange-600" disabled={isLoading}>
-                    {isLoading ? 'Saving...' : 'Complete Setup'}
-                  </Button>
-                </div>
-              </form>
+              )}
+              <DemographicsFormFields
+                variant="onboarding"
+                ageRange={ageRange}
+                setAgeRange={setAgeRange}
+                country={country}
+                setCountry={setCountry}
+                profession={profession}
+                setProfession={setProfession}
+                industry={industry}
+                setIndustry={setIndustry}
+                selectedPersonas={selectedPersonas}
+                togglePersona={togglePersona}
+                technicalLevel={technicalLevel}
+                setTechnicalLevel={setTechnicalLevel}
+              />
+              <div className="flex gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={skipDemographics} disabled={isLoading}>
+                  Skip for now
+                </Button>
+                <Button
+                  type="button"
+                  className="flex-1 bg-orange-500 hover:bg-orange-600"
+                  disabled={isLoading}
+                  onClick={saveDemographicsAndFinish}
+                >
+                  {isLoading ? 'Saving...' : 'Complete Setup'}
+                </Button>
+              </div>
             </CardContent>
           </>
         )}

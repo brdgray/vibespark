@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import StartupCard from '@/components/startup/StartupCard'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Search, SlidersHorizontal, X, CheckCircle2 } from 'lucide-react'
+import { Search, SlidersHorizontal, X, CheckCircle2, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface DirectoryClientProps {
@@ -72,6 +72,50 @@ export default function DirectoryClient({ startups, categories, stages }: Direct
   }, [startups, search, selectedCategory, selectedStage, verifiedOnly, sortBy])
 
   const hasFilters = search || (selectedCategory !== '__all__') || (selectedStage !== '__all__') || verifiedOnly
+
+  const { featuredInResults, spotlightRows, othersInResults } = useMemo(() => {
+    const featured = filtered.filter((s: any) => !!s.is_featured)
+    if (featured.length > 0) {
+      const others = filtered.filter((s: any) => !s.is_featured)
+      return { featuredInResults: featured, spotlightRows: [] as any[], othersInResults: others }
+    }
+    // No DB-featured rows in this result set: spotlight top 3 so dark cards still appear on /directory
+    const spotlight = filtered.slice(0, Math.min(3, filtered.length))
+    const sid = new Set(spotlight.map((s: any) => s.id))
+    const others = filtered.filter((s: any) => !sid.has(s.id))
+    return { featuredInResults: [], spotlightRows: spotlight, othersInResults: others }
+  }, [filtered])
+
+  const highlightedRows = featuredInResults.length > 0 ? featuredInResults : spotlightRows
+  const isDbFeatured = featuredInResults.length > 0
+
+  function renderCard(
+    s: any,
+    cardFeatured: boolean,
+    highlightBadge: 'featured' | 'spotlight' | 'none' = 'none',
+  ) {
+    return (
+      <StartupCard
+        key={s.id}
+        id={s.id}
+        name={s.name}
+        slug={s.slug}
+        tagline={s.tagline}
+        logoPath={s.logo_path}
+        category={s.startup_categories?.name}
+        stage={s.startup_stages?.name}
+        verificationStatus={s.verification_status}
+        isPromoted={s.is_promoted}
+        isFeatured={cardFeatured}
+        highlightBadge={cardFeatured ? highlightBadge : 'none'}
+        sparkScore={Math.round(s.startup_spark_score_metrics?.[0]?.spark_score ?? 0)}
+        wouldUsePct={Math.round(s.startup_spark_score_metrics?.[0]?.would_use_pct ?? 0)}
+        researchCount={s.startup_spark_score_metrics?.[0]?.total_research_responses ?? 0}
+        supportCount={s.startup_spark_score_metrics?.[0]?.support_count ?? 0}
+        saveCount={s.startup_spark_score_metrics?.[0]?.save_count ?? 0}
+      />
+    )
+  }
 
   function clearFilters() {
     setSearch('')
@@ -187,27 +231,42 @@ export default function DirectoryClient({ startups, categories, stages }: Direct
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filtered.map((s: any) => (
-              <StartupCard
-                key={s.id}
-                id={s.id}
-                name={s.name}
-                slug={s.slug}
-                tagline={s.tagline}
-                logoPath={s.logo_path}
-                category={s.startup_categories?.name}
-                stage={s.startup_stages?.name}
-                verificationStatus={s.verification_status}
-                isPromoted={s.is_promoted}
-                isFeatured={s.is_featured}
-                sparkScore={Math.round(s.startup_spark_score_metrics?.[0]?.spark_score ?? 0)}
-                wouldUsePct={Math.round(s.startup_spark_score_metrics?.[0]?.would_use_pct ?? 0)}
-                researchCount={s.startup_spark_score_metrics?.[0]?.total_research_responses ?? 0}
-                supportCount={s.startup_spark_score_metrics?.[0]?.support_count ?? 0}
-                saveCount={s.startup_spark_score_metrics?.[0]?.save_count ?? 0}
-              />
-            ))}
+          <div className="space-y-10">
+            {highlightedRows.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-amber-600 shadow-sm">
+                    <Star className="h-4 w-4 fill-amber-400 text-amber-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900">
+                      {isDbFeatured ? 'Featured on VibeSpark' : 'Community spotlight'}
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      {isDbFeatured
+                        ? 'Dark cards — highlighted by the team'
+                        : 'Top picks from your current sort & filters'}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {highlightedRows.map((s: any) =>
+                    renderCard(s, true, isDbFeatured ? 'featured' : 'spotlight'),
+                  )}
+                </div>
+              </section>
+            )}
+
+            {othersInResults.length > 0 && (
+              <section>
+                {highlightedRows.length > 0 && (
+                  <h2 className="text-lg font-bold text-slate-900 mb-4">All listings</h2>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {othersInResults.map((s: any) => renderCard(s, false))}
+                </div>
+              </section>
+            )}
           </div>
         )}
       </div>

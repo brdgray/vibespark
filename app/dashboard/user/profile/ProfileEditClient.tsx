@@ -10,59 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { Camera, FlaskConical, Check } from 'lucide-react'
-import { cn } from '@/lib/utils'
-
-// ── Dropdown Options ──────────────────────────────────────────
-const AGE_RANGES = ['under-18', '18-24', '25-34', '35-44', '45-54', '55+']
-
-const PROFESSIONS = [
-  'Software Engineer / Developer',
-  'Product Manager',
-  'UX / UI Designer',
-  'Data Scientist / Analyst',
-  'Marketing / Growth',
-  'Sales / Business Development',
-  'Entrepreneur / Founder',
-  'Investor / VC',
-  'Operations / Finance',
-  'Researcher / Academic',
-  'Student',
-  'Other',
-]
-
-const INDUSTRIES = [
-  'Artificial Intelligence / ML',
-  'Technology / Software (SaaS)',
-  'Fintech / Finance',
-  'Healthcare / Biotech',
-  'E-commerce / Retail',
-  'Education / EdTech',
-  'Real Estate / PropTech',
-  'Media / Entertainment',
-  'Legal / LegalTech',
-  'HR / Recruiting',
-  'Logistics / Supply Chain',
-  'Climate / CleanTech',
-  'Food / AgriTech',
-  'Gaming',
-  'Cybersecurity',
-  'Consumer / Lifestyle',
-  'Other',
-]
-
-const PERSONA_OPTIONS = [
-  { key: 'founder',    label: '🚀 Founder' },
-  { key: 'investor',   label: '💼 Investor' },
-  { key: 'engineer',   label: '⚙️ Engineer / Dev' },
-  { key: 'designer',   label: '🎨 Designer' },
-  { key: 'pm',         label: '📋 Product Manager' },
-  { key: 'marketing',  label: '📣 Marketing / Growth' },
-  { key: 'student',    label: '🎓 Student' },
-  { key: 'consumer',   label: '👤 Consumer / User' },
-  { key: 'researcher', label: '🔬 Researcher' },
-]
-
-const TECH_LEVELS = ['non-technical', 'basic', 'intermediate', 'advanced']
+import DemographicsFormFields from '@/components/user/DemographicsFormFields'
 
 interface ProfileEditClientProps {
   userId: string
@@ -317,92 +265,21 @@ export default function ProfileEditClient({ userId, profile, demographics }: Pro
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label>Age Range <span className="text-destructive">*</span></Label>
-            <select
-              value={ageRange}
-              onChange={e => setAgeRange(e.target.value)}
-              className="w-full h-9 appearance-none rounded-2xl border border-input bg-background px-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 cursor-pointer"
-            >
-              <option value="" disabled>Select...</option>
-              {AGE_RANGES.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Country <span className="text-destructive">*</span></Label>
-            <Input value={country} onChange={e => setCountry(e.target.value)} placeholder="United States" />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Profession / Role <span className="text-destructive">*</span></Label>
-            <select
-              value={profession}
-              onChange={e => setProfession(e.target.value)}
-              className="w-full h-9 appearance-none rounded-2xl border border-input bg-background px-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 cursor-pointer"
-            >
-              <option value="" disabled>Select your role...</option>
-              {PROFESSIONS.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Industry <span className="text-destructive">*</span></Label>
-            <select
-              value={industry}
-              onChange={e => setIndustry(e.target.value)}
-              className="w-full h-9 appearance-none rounded-2xl border border-input bg-background px-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 cursor-pointer"
-            >
-              <option value="" disabled>Select your industry...</option>
-              {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Technical Level</Label>
-            <select
-              value={technicalLevel}
-              onChange={e => setTechnicalLevel(e.target.value)}
-              className="w-full h-9 appearance-none rounded-2xl border border-input bg-background px-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 cursor-pointer capitalize"
-            >
-              <option value="">Not specified</option>
-              {TECH_LEVELS.map(l => <option key={l} value={l} className="capitalize">{l}</option>)}
-            </select>
-          </div>
-        </div>
-
-        {/* I am a... multi-select chips */}
-        <div className="space-y-2">
-          <Label>
-            I am a... <span className="text-destructive">*</span>
-            <span className="ml-1.5 text-xs text-muted-foreground font-normal">(select all that apply)</span>
-          </Label>
-          <div className="flex flex-wrap gap-2">
-            {PERSONA_OPTIONS.map(opt => {
-              const active = selectedPersonas.includes(opt.key)
-              return (
-                <button
-                  key={opt.key}
-                  type="button"
-                  onClick={() => togglePersona(opt.key)}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-all',
-                    active
-                      ? 'bg-orange-500 border-orange-500 text-white'
-                      : 'bg-white border-slate-200 text-slate-600 hover:border-orange-300 hover:text-orange-600'
-                  )}
-                >
-                  {active && <Check className="h-3 w-3" />}
-                  {opt.label}
-                </button>
-              )
-            })}
-          </div>
-          {selectedPersonas.length === 0 && (
-            <p className="text-xs text-muted-foreground">Select at least one that describes you</p>
-          )}
-        </div>
+        <DemographicsFormFields
+          variant="profile"
+          ageRange={ageRange}
+          setAgeRange={setAgeRange}
+          country={country}
+          setCountry={setCountry}
+          profession={profession}
+          setProfession={setProfession}
+          industry={industry}
+          setIndustry={setIndustry}
+          selectedPersonas={selectedPersonas}
+          togglePersona={togglePersona}
+          technicalLevel={technicalLevel}
+          setTechnicalLevel={setTechnicalLevel}
+        />
 
         <Button onClick={saveDemographics} disabled={savingDemo} className="bg-blue-500 hover:bg-blue-600 text-white">
           {savingDemo ? 'Saving...' : 'Save Demographics'}

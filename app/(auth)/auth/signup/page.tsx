@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useRouter } from 'next/navigation'
+import { demographicsSchema } from '@/lib/validations/auth'
+import DemographicsFormFields from '@/components/user/DemographicsFormFields'
 
 function GoogleIcon() {
   return (
@@ -18,6 +20,16 @@ function GoogleIcon() {
       <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
     </svg>
   )
+}
+
+function demographicsStarted(
+  ageRange: string,
+  country: string,
+  profession: string,
+  industry: string,
+  personas: string[],
+) {
+  return !!(ageRange || country.trim() || profession || industry || personas.length > 0)
 }
 
 export default function SignUpPage() {
@@ -31,6 +43,19 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [ageRange, setAgeRange] = useState('')
+  const [country, setCountry] = useState('')
+  const [profession, setProfession] = useState('')
+  const [industry, setIndustry] = useState('')
+  const [selectedPersonas, setSelectedPersonas] = useState<string[]>([])
+  const [technicalLevel, setTechnicalLevel] = useState('')
+
+  function togglePersona(key: string) {
+    setSelectedPersonas(prev =>
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key],
+    )
+  }
 
   async function handleGoogleSignUp() {
     setGoogleLoading(true)
@@ -46,13 +71,48 @@ export default function SignUpPage() {
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault()
 
-    if (!displayName.trim()) { setError('Display name is required.'); return }
-    if (username && !/^[a-z0-9_]{3,20}$/.test(username)) {
-      setError('Username must be 3–20 lowercase letters, numbers, or underscores.')
+    if (!displayName.trim()) {
+      setError('Display name is required.')
       return
     }
-    if (!email) { setError('Email is required.'); return }
-    if (password.length < 8) { setError('Password must be at least 8 characters.'); return }
+    if (!/^[a-z0-9_]{3,20}$/.test(username)) {
+      setError('Username must be 3–20 lowercase letters, numbers, or underscores (same as profile).')
+      return
+    }
+    if (!email) {
+      setError('Email is required.')
+      return
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
+
+    const started = demographicsStarted(ageRange, country, profession, industry, selectedPersonas)
+    let demographicsPayload: Record<string, string> | undefined
+    if (started) {
+      const parsed = demographicsSchema.safeParse({
+        ageRange,
+        country: country.trim(),
+        profession,
+        industry,
+        personaType: selectedPersonas.join(','),
+        technicalLevel: technicalLevel || undefined,
+      })
+      if (!parsed.success) {
+        setError(parsed.error.issues[0]?.message ?? 'Complete all research fields or clear them.')
+        return
+      }
+      const d = parsed.data
+      demographicsPayload = {
+        ageRange: d.ageRange,
+        country: d.country,
+        profession: d.profession,
+        industry: d.industry,
+        personaType: selectedPersonas.join(','),
+        technicalLevel: d.technicalLevel ?? '',
+      }
+    }
 
     setIsLoading(true)
     setError(null)
@@ -64,7 +124,8 @@ export default function SignUpPage() {
         email,
         password,
         displayName: displayName.trim(),
-        username: username.trim() || null,
+        username: username.trim(),
+        demographics: demographicsPayload,
       }),
     })
     const json = await res.json()
@@ -88,7 +149,7 @@ export default function SignUpPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-12">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-sm border p-8 space-y-6">
+      <div className="w-full max-w-xl bg-white rounded-3xl shadow-sm border p-8 space-y-6">
 
         <div className="flex justify-center">
           <Link href="/">
@@ -107,7 +168,6 @@ export default function SignUpPage() {
           </div>
         )}
 
-        {/* Google button */}
         <button
           type="button"
           onClick={handleGoogleSignUp}
@@ -124,21 +184,21 @@ export default function SignUpPage() {
           <div className="flex-1 h-px bg-slate-200" />
         </div>
 
-        <form onSubmit={handleSignUp} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+        <form onSubmit={handleSignUp} className="space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="displayName">Display Name <span className="text-destructive">*</span></Label>
+              <Label htmlFor="displayName">Full name <span className="text-destructive">*</span></Label>
               <Input
                 id="displayName"
                 placeholder="Jane Smith"
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
               />
+              <p className="text-[11px] text-muted-foreground">Used for emails and admin only — not shown publicly</p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="username">
-                Username
-                <span className="ml-1 text-xs text-muted-foreground font-normal">(optional)</span>
+                @Handle / Username <span className="text-destructive">*</span>
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
@@ -151,6 +211,7 @@ export default function SignUpPage() {
                   maxLength={20}
                 />
               </div>
+              <p className="text-[11px] text-muted-foreground">3–20 chars — this is what others see</p>
             </div>
           </div>
 
@@ -173,6 +234,30 @@ export default function SignUpPage() {
               placeholder="Min 8 characters"
               value={password}
               onChange={e => setPassword(e.target.value)}
+            />
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">Research Lab profile</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Same options as Edit Profile → Research Demographics. Optional: leave blank and add later.
+              </p>
+            </div>
+            <DemographicsFormFields
+              variant="signup"
+              ageRange={ageRange}
+              setAgeRange={setAgeRange}
+              country={country}
+              setCountry={setCountry}
+              profession={profession}
+              setProfession={setProfession}
+              industry={industry}
+              setIndustry={setIndustry}
+              selectedPersonas={selectedPersonas}
+              togglePersona={togglePersona}
+              technicalLevel={technicalLevel}
+              setTechnicalLevel={setTechnicalLevel}
             />
           </div>
 

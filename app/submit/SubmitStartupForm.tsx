@@ -70,7 +70,7 @@ export default function SubmitStartupForm({ userId, categories, stages }: Submit
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [screenshotFiles, setScreenshotFiles] = useState<File[]>([])
   const [screenshotPreviews, setScreenshotPreviews] = useState<string[]>([])
-  const [enableResearchLab, setEnableResearchLab] = useState(false)
+  const [enableResearchLab, setEnableResearchLab] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
@@ -186,13 +186,13 @@ export default function SubmitStartupForm({ userId, categories, stages }: Submit
     // Grant startup_owner role
     await (supabase.from('user_roles') as any).upsert({ user_id: userId, role: 'startup_owner' })
 
-    // Create research request if opted in (inactive until 3 feedbacks given)
+    // Create research request if opted in (listed in Research Lab; viewing others’ lab stats still requires 3 feedbacks)
     if (enableResearchLab) {
       await (supabase.from('research_requests') as any).insert({
         startup_id: startup.id,
         title: `Feedback on ${data.name}`,
         created_by: userId,
-        is_active: false, // founder must activate from dashboard after giving 3 feedbacks
+        is_active: true,
       })
     }
 
@@ -612,7 +612,10 @@ export default function SubmitStartupForm({ userId, categories, stages }: Submit
                   <div>
                     <p className="font-medium text-sm text-slate-900">Include in Research Lab</p>
                     <p className="text-xs mt-0.5 text-muted-foreground">
-                      Enable structured feedback from the community. You&apos;ll need to give feedback on 3 other startups first to activate it from your dashboard.
+                      This is ON by default so you can receive structured community feedback later. Turn it OFF if you do not want Research Lab for this startup.
+                    </p>
+                    <p className="text-xs mt-1 text-blue-700">
+                      You can turn Research Lab on anytime. To see response totals and fuller activity on other products in the Lab, give structured feedback on 3 other startups first.
                     </p>
                   </div>
                 </div>

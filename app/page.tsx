@@ -8,15 +8,38 @@ import { fetchMetricsMap, withMetrics } from '@/lib/utils/metrics'
 
 async function getFeaturedStartups() {
   const supabase = await createClient()
-  const { data } = await supabase
+  const { data: flagged } = await supabase
     .from('startups')
     .select('*, startup_categories(name), startup_stages(name)')
     .eq('verification_status', 'verified')
     .eq('is_featured', true)
     .limit(3)
-  const rows = data ?? []
-  const metrics = await fetchMetricsMap(supabase, rows.map(s => s.id))
-  return withMetrics(rows, metrics)
+
+  let rows = flagged ?? []
+
+  // If nothing is flagged featured in the DB, still show a spotlight row (top Spark)
+  // so the homepage and card design are never an empty / all-plain experience.
+  if (rows.length === 0) {
+    const { data: pool } = await supabase
+      .from('startups')
+      .select('*, startup_categories(name), startup_stages(name)')
+      .eq('verification_status', 'verified')
+      .limit(24)
+    const poolRows = pool ?? []
+    const poolMetrics = await fetchMetricsMap(supabase, poolRows.map(s => s.id))
+    const ranked = withMetrics(poolRows, poolMetrics)
+    ranked.sort(
+      (a: any, b: any) =>
+        (b.startup_spark_score_metrics?.[0]?.spark_score ?? 0) -
+        (a.startup_spark_score_metrics?.[0]?.spark_score ?? 0),
+    )
+    rows = ranked.slice(0, 3)
+  } else {
+    const metrics = await fetchMetricsMap(supabase, rows.map(s => s.id))
+    rows = withMetrics(rows, metrics)
+  }
+
+  return rows
 }
 
 async function getTrendingStartups() {
@@ -50,6 +73,8 @@ export default async function HomePage() {
     getTrendingStartups(),
     getResearchLabStartups(),
   ])
+
+  const hasEditorPicks = featured.some((s: any) => !!s.is_featured)
 
   const howItWorks = [
     {
@@ -133,7 +158,9 @@ export default async function HomePage() {
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900">Featured Startups</h2>
-                <p className="text-muted-foreground mt-1">Verified, high-signal AI products</p>
+                <p className="text-muted-foreground mt-1">
+                  Editor picks and community standouts — always shown here first.
+                </p>
               </div>
               <LinkButton href="/directory?verified=true&sort=featured" variant="ghost" className="text-orange-500">
                 View all <ArrowRight className="ml-1 h-4 w-4" />
@@ -151,7 +178,9 @@ export default async function HomePage() {
                   category={s.startup_categories?.name}
                   stage={s.startup_stages?.name}
                   verificationStatus={s.verification_status}
-                  isFeatured={s.is_featured}
+                  isPromoted={s.is_promoted}
+                  isFeatured
+                  highlightBadge={hasEditorPicks ? 'featured' : 'spotlight'}
                   sparkScore={Math.round(s.startup_spark_score_metrics?.[0]?.spark_score ?? 0)}
                   wouldUsePct={Math.round(s.startup_spark_score_metrics?.[0]?.would_use_pct ?? 0)}
                   researchCount={s.startup_spark_score_metrics?.[0]?.total_research_responses ?? 0}
@@ -191,9 +220,12 @@ export default async function HomePage() {
                   category={s.startup_categories?.name}
                   stage={s.startup_stages?.name}
                   verificationStatus={s.verification_status}
+                  isPromoted={s.is_promoted}
+                  isFeatured={!!s.is_featured}
                   sparkScore={Math.round(s.startup_spark_score_metrics?.[0]?.spark_score ?? 0)}
                   wouldUsePct={Math.round(s.startup_spark_score_metrics?.[0]?.would_use_pct ?? 0)}
                   researchCount={s.startup_spark_score_metrics?.[0]?.total_research_responses ?? 0}
+                  supportCount={s.startup_spark_score_metrics?.[0]?.support_count ?? 0}
                 />
               ))}
             </div>
