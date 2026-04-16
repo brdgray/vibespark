@@ -223,8 +223,8 @@ export default function ProfileEditClient({ userId, profile, demographics }: Pro
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               {isResearchParticipant
-                ? 'Opted in — founders can request your structured feedback.'
-                : 'Opt in to give structured feedback to founders in the Research Lab.'}
+                ? 'Opted in — signals you welcome founder outreach about research opportunities.'
+                : 'Optional preference — anyone signed in can still give Lab feedback without toggling this.'}
             </p>
           </div>
           <button
@@ -241,27 +241,30 @@ export default function ProfileEditClient({ userId, profile, demographics }: Pro
         </Button>
       </div>
 
-      {/* ── Demographics ── */}
-      <div className="bg-white rounded-2xl border p-6 space-y-5">
+      {/* ── Demographics (anchor for Research Lab deep link) ── */}
+      <div id="research-lab-panel" className="bg-white rounded-2xl border p-6 space-y-5 scroll-mt-24">
         <div className="flex items-start justify-between">
           <div>
             <h2 className="font-semibold text-slate-900">Research Demographics</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">Required to participate in the Research Lab. Founders see aggregated breakdowns only — never your individual info.</p>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Optional — add this so founders see <em>aggregate</em> breakdowns (role, persona, etc.) on Research Lab insights.
+              You can give full Lab feedback without it. Founders never see your individual answers tied to you.
+            </p>
           </div>
           {hasDemographics ? (
             <span className="text-xs bg-green-100 text-green-700 border border-green-200 rounded-full px-2.5 py-1 font-medium flex items-center gap-1">
               <Check className="h-3 w-3" /> Complete
             </span>
           ) : (
-            <span className="text-xs bg-amber-100 text-amber-700 border border-amber-200 rounded-full px-2.5 py-1 font-medium">
-              Required
+            <span className="text-xs bg-slate-100 text-slate-600 border border-slate-200 rounded-full px-2.5 py-1 font-medium">
+              Recommended
             </span>
           )}
         </div>
 
         {!hasDemographics && (
-          <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-700">
-            Complete your demographics to give research feedback and earn points for helping founders.
+          <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3 text-sm text-slate-700">
+            Demographics power segment charts for startups. Saving them also helps you earn recognition when you give structured feedback.
           </div>
         )}
 

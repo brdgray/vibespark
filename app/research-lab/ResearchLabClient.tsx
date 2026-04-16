@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner'
 import {
   FlaskConical, CheckCircle2, Lock, ChevronRight,
-  ExternalLink, Globe,
+  ExternalLink, Globe, Sparkles, Users,
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -28,7 +28,8 @@ const FEEDBACK_TO_UNLOCK_INSIGHTS = 3
 interface ResearchLabClientProps {
   requests: any[]
   user: any
-  isResearchParticipant: boolean
+  /** Saved research demographics — optional; improves founder-facing segment breakdowns */
+  hasResearchDemographics?: boolean
   respondedIds: string[]
   /** Feedback given on startups the user does not own */
   feedbackToOthersCount?: number
@@ -41,7 +42,7 @@ interface ResearchLabClientProps {
 export default function ResearchLabClient({
   requests,
   user,
-  isResearchParticipant,
+  hasResearchDemographics = false,
   respondedIds,
   feedbackToOthersCount = 0,
   ownedStartupIds = [],
@@ -148,26 +149,66 @@ export default function ResearchLabClient({
       {/* Header */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-10">
-          <div className="max-w-3xl">
+          <div className="mx-auto max-w-4xl">
             <div className="flex items-center gap-3 mb-3">
               <FlaskConical className="h-8 w-8 text-blue-500" />
               <h1 className="text-3xl font-bold text-slate-900">Research Lab</h1>
             </div>
-            <p className="text-muted-foreground text-lg">
-              Help AI founders validate their products. Your structured feedback gives founders real signals
-              from real users — segmented by who you are.
-            </p>
-            {!user && (
-              <div className="mt-4 rounded-2xl bg-blue-50 border border-blue-200 p-4 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-blue-800">Sign in to participate</p>
-                  <p className="text-sm text-blue-600">Create an account and opt in to the research panel to give feedback.</p>
-                </div>
-                <LinkButton href="/auth/signup" size="sm" className="bg-blue-500 hover:bg-blue-600">
-                  Join Now
-                </LinkButton>
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_min(100%,280px)] lg:items-start">
+              <div>
+                <p className="text-muted-foreground text-lg leading-relaxed">
+                  Try a product, then share a quick <strong className="font-semibold text-slate-800">would you use it?</strong> signal,
+                  short scores, and optional notes. Founders use it to sharpen positioning and what to build next.
+                </p>
+                <ul className="mt-4 space-y-2 text-sm text-slate-600">
+                  <li className="flex gap-2">
+                    <Sparkles className="h-4 w-4 shrink-0 text-amber-500 mt-0.5" />
+                    <span>No long survey — most sessions take a couple of minutes.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <Users className="h-4 w-4 shrink-0 text-blue-500 mt-0.5" />
+                    <span>Your answers feed live metrics on the startup&apos;s public profile (aggregated with other testers).</span>
+                  </li>
+                </ul>
+                {!user && (
+                  <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-blue-200 bg-blue-50/90 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="font-medium text-blue-900">Sign in to give feedback</p>
+                      <p className="text-sm text-blue-800/90">Any account can help founders here — no separate &quot;research panel&quot; signup.</p>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <LinkButton href="/auth/signin?redirectTo=/research-lab" variant="outline" size="sm" className="border-blue-300">
+                        Sign in
+                      </LinkButton>
+                      <LinkButton href="/auth/signup?redirectTo=/research-lab" size="sm" className="bg-blue-500 hover:bg-blue-600">
+                        Create account
+                      </LinkButton>
+                    </div>
+                  </div>
+                )}
+                {user && !hasResearchDemographics && (
+                  <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm font-medium text-slate-800">Optional: who you are</p>
+                    <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+                      Add research demographics in your profile so founders can see <em>aggregate</em> breakdowns (role, persona, etc.).
+                      You can give full feedback without it — this only improves segment charts for startups.
+                    </p>
+                    <LinkButton href="/dashboard/user/profile#research-lab-panel" variant="outline" size="sm" className="mt-3">
+                      Open profile demographics
+                    </LinkButton>
+                  </div>
+                )}
               </div>
-            )}
+              <aside className="rounded-2xl border border-orange-100 bg-orange-50/60 p-5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-orange-800/80">For founders</p>
+                <p className="mt-2 text-sm text-slate-800 leading-relaxed">
+                  Turn on Research Lab from your startup dashboard, add a short prompt, and link testers here or from your public profile.
+                </p>
+                <LinkButton href="/dashboard/startup" size="sm" className="mt-4 w-full bg-orange-500 hover:bg-orange-600 sm:w-auto">
+                  My startup dashboard
+                </LinkButton>
+              </aside>
+            </div>
           </div>
         </div>
       </div>
@@ -197,9 +238,9 @@ export default function ResearchLabClient({
             { label: 'Completed', value: done.length, color: 'text-green-600' },
             {
               label: 'Products in Lab',
-              value: showOthersInsights ? requests.length : '—',
-              color: showOthersInsights ? 'text-slate-700' : 'text-amber-600',
-              sub: !showOthersInsights && user ? 'Unlock at 3 feedbacks' : undefined,
+              value: requests.length,
+              color: 'text-slate-700',
+              sub: !showOthersInsights && user ? 'Per-card response counts unlock after 3 feedbacks to others' : undefined,
             },
           ].map(s => (
             <div key={s.label} className="bg-white rounded-2xl border p-4 text-center">
@@ -240,7 +281,7 @@ export default function ResearchLabClient({
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-slate-900 mb-2">Your startups in the Lab</h2>
             <p className="mb-4 text-sm text-muted-foreground">
-              You can&apos;t submit structured feedback on your own listing. Others will see it here when they opt in.
+              You can&apos;t submit structured feedback on your own listing. Other signed-in users can leave feedback here or from your public profile.
             </p>
             <div className="space-y-3 opacity-80">
               {ownPending.map(request => (
@@ -332,14 +373,12 @@ export default function ResearchLabClient({
                       <Button
                         onClick={() => openFeedback(request)}
                         size="sm"
-                        className={`w-full shrink-0 sm:w-auto ${!isResearchParticipant ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'}`}
+                        className={`w-full shrink-0 sm:w-auto ${!user ? 'bg-slate-200 text-slate-600' : 'bg-blue-500 hover:bg-blue-600'}`}
                       >
                         {!user ? (
-                          <><Lock className="mr-1.5 h-3.5 w-3.5" /> Sign in</>
-                        ) : !isResearchParticipant ? (
-                          <><Lock className="mr-1.5 h-3.5 w-3.5" /> Opt In</>
+                          <><Lock className="mr-1.5 h-3.5 w-3.5" /> Sign in to give feedback</>
                         ) : (
-                          <>Give Feedback <ChevronRight className="ml-1 h-4 w-4" /></>
+                          <>Give feedback <ChevronRight className="ml-1 h-4 w-4" /></>
                         )}
                       </Button>
                     </div>

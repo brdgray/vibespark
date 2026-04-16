@@ -14,16 +14,15 @@ export default async function ResearchLabPage({ searchParams }: Props) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  let isResearchParticipant = false
+  let hasResearchDemographics = false
 
   if (user) {
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('is_research_participant')
-      .eq('id', user.id)
-      .single()
-    const profile = profileData as any
-    isResearchParticipant = profile?.is_research_participant ?? false
+    const { data: demoRow } = await supabase
+      .from('research_demographics')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    hasResearchDemographics = !!demoRow
   }
 
   const { data: requests } = await supabase
@@ -77,7 +76,7 @@ export default async function ResearchLabPage({ searchParams }: Props) {
     <ResearchLabClient
       requests={requestsWithMetrics}
       user={user}
-      isResearchParticipant={isResearchParticipant}
+      hasResearchDemographics={hasResearchDemographics}
       respondedIds={respondedIds}
       feedbackToOthersCount={feedbackToOthersCount}
       ownedStartupIds={ownedStartupIds}
