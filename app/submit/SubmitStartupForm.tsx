@@ -19,6 +19,31 @@ function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 }
 
+/** Walk react-hook-form / zod FieldErrors for the first string message (including nested field arrays). */
+function firstNestedErrorMessage(errs: Record<string, unknown> | undefined): string | undefined {
+  if (!errs) return undefined
+  for (const v of Object.values(errs)) {
+    if (v == null) continue
+    if (typeof v === 'object' && !Array.isArray(v)) {
+      const o = v as { message?: unknown; root?: { message?: unknown } }
+      if (typeof o.message === 'string' && o.message) return o.message
+      if (typeof o.root?.message === 'string' && o.root.message) return o.root.message
+    }
+    if (Array.isArray(v)) {
+      for (const item of v) {
+        const nested = firstNestedErrorMessage(item as Record<string, unknown>)
+        if (nested) return nested
+      }
+      continue
+    }
+    if (typeof v === 'object') {
+      const nested = firstNestedErrorMessage(v as Record<string, unknown>)
+      if (nested) return nested
+    }
+  }
+  return undefined
+}
+
 const schema = z.object({
   name: z.string().min(2).max(100),
   tagline: z.string().min(10).max(160),
@@ -28,7 +53,10 @@ const schema = z.object({
   founderTitle: z.string().optional(),
   categoryId: z.string().uuid('Choose a category'),
   stageId: z.string().uuid('Choose a stage'),
-  targetAudience: z.string().max(300).optional(),
+  targetAudience: z.preprocess(
+    v => (v === '' || v === null || v === undefined ? undefined : v),
+    z.string().max(300, 'Target audience must be at most 300 characters').optional(),
+  ),
   pricingModel: z.string().optional(),
   foundedAt: z.string().optional(),
   location: z.string().optional(),
@@ -245,18 +273,8 @@ export default function SubmitStartupForm({ userId, categories, stages }: Submit
   }
 
   function onInvalid() {
-    const errs = form.formState.errors
-    const first =
-      (errs.name?.message as string) ||
-      (errs.tagline?.message as string) ||
-      (errs.description?.message as string) ||
-      (errs.websiteUrl?.message as string) ||
-      (errs.founderName?.message as string) ||
-      (errs.categoryId?.message as string) ||
-      (errs.stageId?.message as string) ||
-      (errs.links?.message as string) ||
-      (errs.links?.root?.message as string)
-    toast.error(first ?? 'Please fill in all required fields.')
+    const first = firstNestedErrorMessage(form.formState.errors as Record<string, unknown>)
+    toast.error(first ?? 'Please fix the highlighted fields and try again.')
   }
 
   if (submitted) {
@@ -304,7 +322,7 @@ export default function SubmitStartupForm({ userId, categories, stages }: Submit
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
-        <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="divide-y">
+        <form noValidate onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="divide-y">
           <div className="p-6 space-y-5">
             <div>
               <h2 className="text-xl font-bold text-slate-900">List your startup</h2>
@@ -468,6 +486,11 @@ export default function SubmitStartupForm({ userId, categories, stages }: Submit
                 <div className="space-y-1.5">
                   <Label>Target audience</Label>
                   <Textarea rows={2} placeholder="Who is this for?" {...form.register('targetAudience')} />
+                  {form.formState.errors.targetAudience && (
+                    <p className="text-xs text-destructive">
+                      {form.formState.errors.targetAudience.message as string}
+                    </p>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -487,7 +510,7 @@ export default function SubmitStartupForm({ userId, categories, stages }: Submit
                   </div>
                   <div className="space-y-1.5">
                     <Label>Team size</Label>
-                    <Input type="number" min={1} placeholder="Optional" {...form.register('teamSize')} />
+                    <Input type="number" placeholder="Optional" {...form.register('teamSize')} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">

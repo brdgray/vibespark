@@ -289,7 +289,7 @@ export default function EditStartupForm({ startup, categories, stages, screensho
           </div>
           <div className="space-y-1.5">
             <Label>Team Size</Label>
-            <Input type="number" min={1} value={teamSize} onChange={e => setTeamSize(e.target.value)} />
+            <Input type="number" value={teamSize} onChange={e => setTeamSize(e.target.value)} />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label>AI Stack (comma separated)</Label>
